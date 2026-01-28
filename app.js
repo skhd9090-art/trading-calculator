@@ -1,0 +1,135 @@
+const tabs = document.querySelectorAll(".tab");
+const content = document.getElementById("content");
+
+let activeTab = "position";
+
+let state = {
+  token: "BTC",
+  side: "long",
+  entryPrice: "",
+  stopLoss: "",
+  riskAmount: ""
+};
+
+// Tab switching
+tabs.forEach(function (tab) {
+  tab.addEventListener("click", function () {
+    tabs.forEach(function (t) {
+      t.classList.remove("active");
+    });
+    tab.classList.add("active");
+    activeTab = tab.dataset.tab;
+    render();
+  });
+});
+
+function render() {
+  if (activeTab === "position") {
+    renderPositionSize();
+  } else if (activeTab === "risk") {
+    content.innerHTML = "<p>Risk calculator coming next 🙂</p>";
+  } else {
+    content.innerHTML = "<p>Stop loss calculator coming next 🙂</p>";
+  }
+}
+
+function renderPositionSize() {
+  content.innerHTML =
+    '<h2>Position Size Calculator</h2>' +
+
+    '<label>Token</label>' +
+    '<input id="token" type="text" value="' + state.token + '" />' +
+
+    '<label>Position Type</label>' +
+    '<div class="toggle">' +
+      '<button id="longBtn">Long</button>' +
+      '<button id="shortBtn">Short</button>' +
+    '</div>' +
+
+    '<label>Entry Price</label>' +
+    '<input id="entryPrice" type="number" placeholder="90000" />' +
+
+    '<label>Stop Loss Price</label>' +
+    '<input id="stopLoss" type="number" placeholder="89000" />' +
+
+    '<label>Risk Amount (USDT)</label>' +
+    '<input id="riskAmount" type="number" placeholder="20" />' +
+
+    '<hr />' +
+    '<div id="result"></div>';
+
+  updateSideUI();
+  bindPositionEvents();
+}
+
+function updateSideUI() {
+  document.getElementById("longBtn").classList.toggle("active", state.side === "long");
+  document.getElementById("shortBtn").classList.toggle("active", state.side === "short");
+}
+
+function bindPositionEvents() {
+  document.getElementById("token").addEventListener("input", function (e) {
+    state.token = e.target.value.toUpperCase();
+  });
+
+  document.getElementById("longBtn").addEventListener("click", function () {
+    state.side = "long";
+    updateSideUI();
+    calculate();
+  });
+
+  document.getElementById("shortBtn").addEventListener("click", function () {
+    state.side = "short";
+    updateSideUI();
+    calculate();
+  });
+
+  document.getElementById("entryPrice").addEventListener("input", function (e) {
+    state.entryPrice = e.target.value;
+    calculate();
+  });
+
+  document.getElementById("stopLoss").addEventListener("input", function (e) {
+    state.stopLoss = e.target.value;
+    calculate();
+  });
+
+  document.getElementById("riskAmount").addEventListener("input", function (e) {
+    state.riskAmount = e.target.value;
+    calculate();
+  });
+}
+
+function calculate() {
+  const entry = Number(state.entryPrice);
+  const sl = Number(state.stopLoss);
+  const risk = Number(state.riskAmount);
+
+  if (!entry || !sl || !risk) {
+    document.getElementById("result").innerHTML = "";
+    return;
+  }
+
+  let riskPerUnit =
+    state.side === "long"
+      ? entry - sl
+      : sl - entry;
+
+  if (riskPerUnit <= 0) {
+    document.getElementById("result").innerHTML =
+      '<p style="color:red">Invalid stop loss for ' + state.side + ' position</p>';
+    return;
+  }
+
+  const size = risk / riskPerUnit;
+  const notional = size * entry;
+
+  document.getElementById("result").innerHTML =
+    '<h3>Result</h3>' +
+    '<p><strong>Position Size:</strong> ' + size.toFixed(6) + ' ' + state.token + '</p>' +
+    '<p><strong>Notional Value:</strong> $' + notional.toFixed(2) + '</p>' +
+    '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(2) + '</p>';
+}
+
+// Initial render
+render();
