@@ -26,6 +26,12 @@ let riskState = {
   isFetchingPrice: false
 };
 
+let tokenCache = {
+  tokens: [],
+  lastFetch: 0,
+  isLoading: false
+};
+
 tabs.forEach(function (tab) {
   tab.addEventListener("click", function () {
     tabs.forEach(function (t) {
@@ -57,7 +63,10 @@ function renderPositionSize() {
   content.innerHTML =
     '<h2>Position Size Calculator</h2>' +
     '<label>Token</label>' +
-    '<input id="token" type="text" value="' + state.token + '" placeholder="BTC, ETH, SOL" />' +
+    '<div class="autocomplete-wrapper">' +
+      '<input id="token" type="text" value="' + state.token + '" placeholder="BTC, ETH, SOL" />' +
+      '<div id="tokenSuggestions" class="autocomplete-dropdown"></div>' +
+    '</div>' +
     '<label>Position Type</label>' +
     '<div class="toggle">' +
       '<button id="longBtn">Long</button>' +
@@ -107,18 +116,8 @@ function bindPositionEvents() {
   const stopLossInput = document.getElementById("stopLoss");
   const riskAmountInput = document.getElementById("riskAmount");
 
-  tokenInput.addEventListener("input", function (e) {
-    state.token = e.target.value.trim().toUpperCase();
-    if (state.priceMode === "market" && state.token) {
-      fetchMarketPrice();
-    }
-  });
-
-  tokenInput.addEventListener("blur", function () {
-    if (state.priceMode === "market" && state.token) {
-      fetchMarketPrice();
-    }
-  });
+  // Handle token autocomplete
+  handleTokenInput("token", "tokenSuggestions", "position");
 
   longBtn.addEventListener("click", function () {
     state.side = "long";
@@ -180,7 +179,10 @@ function renderRiskCalculator() {
   content.innerHTML =
     '<h2>Risk Calculator</h2>' +
     '<label>Token</label>' +
-    '<input id="riskToken" type="text" value="' + riskState.token + '" placeholder="BTC, ETH, SOL" />' +
+    '<div class="autocomplete-wrapper">' +
+      '<input id="riskToken" type="text" value="' + riskState.token + '" placeholder="BTC, ETH, SOL" />' +
+      '<div id="riskTokenSuggestions" class="autocomplete-dropdown"></div>' +
+    '</div>' +
     '<label>Position Type</label>' +
     '<div class="toggle">' +
       '<button id="riskLongBtn">Long</button>' +
@@ -240,18 +242,8 @@ function bindRiskEvents() {
   const entryPriceInput = document.getElementById("riskEntryPrice");
   const stopLossInput = document.getElementById("riskStopLoss");
 
-  tokenInput.addEventListener("input", function (e) {
-    riskState.token = e.target.value.trim().toUpperCase();
-    if (riskState.priceMode === "market" && riskState.token) {
-      fetchRiskMarketPrice();
-    }
-  });
-
-  tokenInput.addEventListener("blur", function () {
-    if (riskState.priceMode === "market" && riskState.token) {
-      fetchRiskMarketPrice();
-    }
-  });
+  // Handle token autocomplete
+  handleTokenInput("riskToken", "riskTokenSuggestions", "risk");
 
   longBtn.addEventListener("click", function () {
     riskState.side = "long";
@@ -530,6 +522,173 @@ async function getBestPrice(token) {
   }
 
   throw new Error("Price not available from any exchange");
+}
+
+async function fetchAvailableTokens() {
+  // Check cache first (cache for 24 hours)
+  const now = Date.now();
+  if (tokenCache.tokens.length > 0 && (now - tokenCache.lastFetch) < 86400000) {
+    return tokenCache.tokens;
+  }
+
+  if (tokenCache.isLoading) {
+    return tokenCache.tokens;
+  }
+
+  tokenCache.isLoading = true;
+  const allTokens = new Set();
+
+  try {
+    // Fetch from Binance
+    const binanceRes = await fetch("https://api.binance.com/api/v3/exchangeInfo");
+    if (binanceRes.ok) {
+      const data = await binanceRes.json();
+      if (data.symbols) {
+        data.symbols.forEach(function (symbol) {
+          if (symbol.quoteAsset === "USDT" && symbol.status === "TRADING") {
+            const token = symbol.baseAsset;
+            allTokens.add(token);
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.log("Binance token fetch failed:", e);
+  }
+
+  try {
+    // Fetch from MEXC
+    const mexcRes = await fetch("https://api.mexc.com/api/v3/exchangeInfo");
+    if (mexcRes.ok) {
+      const data = await mexcRes.json();
+      if (data.symbols) {
+        data.symbols.forEach(function (symbol) {
+          if (symbol.quoteAsset === "USDT" && symbol.status === "TRADING") {
+            const token = symbol.baseAsset;
+            allTokens.add(token);
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.log("MEXC token fetch failed:", e);
+  }
+
+  // Sort tokens and cache
+  tokenCache.tokens = Array.from(allTokens).sort();
+  tokenCache.lastFetch = now;
+  tokenCache.isLoading = false;
+
+  return tokenCache.tokens;
+}
+
+function handleTokenInput(inputId, suggestionsId, stateType) {
+  const input = document.getElementById(inputId);
+  const suggestionsDiv = document.getElementById(suggestionsId);
+
+  if (!input) return;
+
+  input.addEventListener("input", function (e) {
+    const value = e.target.value.trim().toUpperCase();
+    
+    if (stateType === "position") {
+      state.token = value;
+    } else if (stateType === "risk") {
+      riskState.token = value;
+    }
+
+    if (value.length === 0) {
+      suggestionsDiv.innerHTML = "";
+      suggestionsDiv.style.display = "none";
+      return;
+    }
+
+    if (value.length > 0) {
+      updateTokenSuggestions(value, suggestionsId, stateType);
+    }
+
+    // Fetch price if market mode and token length >= 1
+    if (value.length > 0) {
+      if (stateType === "position" && state.priceMode === "market") {
+        fetchMarketPrice();
+      } else if (stateType === "risk" && riskState.priceMode === "market") {
+        fetchRiskMarketPrice();
+      }
+    }
+  });
+
+  input.addEventListener("blur", function () {
+    setTimeout(function () {
+      suggestionsDiv.style.display = "none";
+    }, 200);
+  });
+
+  input.addEventListener("focus", function () {
+    const value = input.value.trim().toUpperCase();
+    if (value.length > 0) {
+      suggestionsDiv.style.display = "block";
+    }
+  });
+
+  // Load tokens on focus
+  input.addEventListener("focus", function () {
+    if (tokenCache.tokens.length === 0 && !tokenCache.isLoading) {
+      fetchAvailableTokens();
+    }
+  });
+}
+
+function updateTokenSuggestions(searchTerm, suggestionsId, stateType) {
+  const suggestionsDiv = document.getElementById(suggestionsId);
+  
+  if (tokenCache.tokens.length === 0) {
+    fetchAvailableTokens().then(function () {
+      displaySuggestions(searchTerm, suggestionsDiv, stateType);
+    });
+  } else {
+    displaySuggestions(searchTerm, suggestionsDiv, stateType);
+  }
+}
+
+function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
+  const filtered = tokenCache.tokens.filter(function (token) {
+    return token.startsWith(searchTerm);
+  }).slice(0, 10);
+
+  if (filtered.length === 0) {
+    suggestionsDiv.innerHTML = '<div class="suggestion-item">No tokens found</div>';
+    suggestionsDiv.style.display = "block";
+    return;
+  }
+
+  let html = "";
+  filtered.forEach(function (token) {
+    html += '<div class="suggestion-item" data-token="' + token + '">' + token + '</div>';
+  });
+
+  suggestionsDiv.innerHTML = html;
+  suggestionsDiv.style.display = "block";
+
+  // Add click handlers to suggestions
+  document.querySelectorAll(".suggestion-item[data-token]").forEach(function (item) {
+    item.addEventListener("click", function () {
+      const selectedToken = this.getAttribute("data-token");
+      if (stateType === "position") {
+        state.token = selectedToken;
+        document.getElementById("token").value = selectedToken;
+        if (state.priceMode === "market") {
+          fetchMarketPrice();
+        }
+      } else if (stateType === "risk") {
+        riskState.token = selectedToken;
+        document.getElementById("riskToken").value = selectedToken;
+        if (riskState.priceMode === "market") {
+          fetchRiskMarketPrice();
+        }
+      }
+      suggestionsDiv.style.display = "none";
+    });
+  });
 }
 
 render();
