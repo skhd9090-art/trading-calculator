@@ -101,6 +101,14 @@ function renderPositionSize() {
   updateSideUI();
   bindPositionEvents();
   calculate();
+  
+  // Focus on token input after a short delay to trigger autocomplete setup
+  setTimeout(function() {
+    const tokenInput = document.getElementById("token");
+    if (tokenInput) {
+      tokenInput.focus();
+    }
+  }, 100);
 }
 
 function updateSideUI() {
@@ -631,10 +639,17 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
 
   // Focus event - show suggestions if input has value
   input.addEventListener("focus", function () {
+    console.log("Token input focused");
     const value = input.value.trim().toUpperCase();
-    if (value.length > 0 && suggestionsDiv.innerHTML) {
-      suggestionsDiv.style.display = "block";
+    
+    // Show suggestions on focus
+    if (value.length > 0) {
+      updateTokenSuggestions(value, suggestionsId, stateType);
+    } else {
+      // Show all tokens if input is empty
+      updateTokenSuggestions("", suggestionsId, stateType);
     }
+    
     // Load tokens on first focus (but we have hardcoded list now)
     if (tokenCache.tokens.length === 0 && !tokenCache.isLoading) {
       fetchAvailableTokens();
@@ -660,9 +675,17 @@ function updateTokenSuggestions(searchTerm, suggestionsId, stateType) {
 }
 
 function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
-  const filtered = tokenCache.tokens.filter(function (token) {
-    return token.startsWith(searchTerm);
-  }).slice(0, 10);
+  let filtered;
+  
+  if (searchTerm === "" || searchTerm.length === 0) {
+    // Show first 10 tokens if search is empty
+    filtered = tokenCache.tokens.slice(0, 10);
+  } else {
+    // Filter by search term
+    filtered = tokenCache.tokens.filter(function (token) {
+      return token.startsWith(searchTerm);
+    }).slice(0, 10);
+  }
 
   if (filtered.length === 0) {
     suggestionsDiv.innerHTML = '<div class="suggestion-item">No tokens found</div>';
@@ -677,6 +700,7 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
 
   suggestionsDiv.innerHTML = html;
   suggestionsDiv.style.display = "block";
+  console.log("Displayed suggestions for:", searchTerm, "Count:", filtered.length);
 
   // Add click handlers to suggestions
   document.querySelectorAll(".suggestion-item[data-token]").forEach(function (item) {
