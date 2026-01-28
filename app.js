@@ -27,7 +27,11 @@ let riskState = {
 };
 
 let tokenCache = {
-  tokens: [],
+  tokens: [
+    "BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "LINK", "MATIC",
+    "DOT", "SHIB", "ARB", "TRX", "OP", "NEAR", "LTC", "BCH", "ATOM", "XMR",
+    "ICP", "VET", "FIL", "UNI", "APT", "GMX", "FTM", "LDO", "CRV", "PEPE"
+  ],
   lastFetch: 0,
   isLoading: false
 };
@@ -586,7 +590,10 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
   const input = document.getElementById(inputId);
   const suggestionsDiv = document.getElementById(suggestionsId);
 
-  if (!input || !suggestionsDiv) return;
+  if (!input || !suggestionsDiv) {
+    console.log("Token input or suggestions div not found:", inputId, suggestionsId);
+    return;
+  }
 
   // Input event - update suggestions
   input.addEventListener("input", function (e) {
@@ -598,19 +605,20 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
       riskState.token = value;
     }
 
-    if (value.length === 0) {
+    // Show suggestions for any input
+    if (value.length > 0) {
+      updateTokenSuggestions(value, suggestionsId, stateType);
+      
+      // Fetch price if market mode
+      if (stateType === "position" && state.priceMode === "market") {
+        fetchMarketPrice();
+      } else if (stateType === "risk" && riskState.priceMode === "market") {
+        fetchRiskMarketPrice();
+      }
+    } else {
+      // Clear suggestions if input is empty
       suggestionsDiv.innerHTML = "";
       suggestionsDiv.style.display = "none";
-      return;
-    }
-
-    updateTokenSuggestions(value, suggestionsId, stateType);
-
-    // Fetch price if market mode
-    if (stateType === "position" && state.priceMode === "market") {
-      fetchMarketPrice();
-    } else if (stateType === "risk" && riskState.priceMode === "market") {
-      fetchRiskMarketPrice();
     }
   });
 
@@ -627,7 +635,7 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
     if (value.length > 0 && suggestionsDiv.innerHTML) {
       suggestionsDiv.style.display = "block";
     }
-    // Load tokens on first focus
+    // Load tokens on first focus (but we have hardcoded list now)
     if (tokenCache.tokens.length === 0 && !tokenCache.isLoading) {
       fetchAvailableTokens();
     }
@@ -637,12 +645,17 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
 function updateTokenSuggestions(searchTerm, suggestionsId, stateType) {
   const suggestionsDiv = document.getElementById(suggestionsId);
   
-  if (tokenCache.tokens.length === 0) {
+  // Use hardcoded token list for faster suggestions
+  displaySuggestions(searchTerm, suggestionsDiv, stateType);
+  
+  // Also fetch and merge with API tokens in background if needed
+  if (tokenCache.isLoading === false && tokenCache.lastFetch === 0) {
     fetchAvailableTokens().then(function () {
+      // Re-display with merged list
       displaySuggestions(searchTerm, suggestionsDiv, stateType);
+    }).catch(function (err) {
+      console.log("Failed to fetch additional tokens:", err);
     });
-  } else {
-    displaySuggestions(searchTerm, suggestionsDiv, stateType);
   }
 }
 
