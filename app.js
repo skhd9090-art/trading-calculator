@@ -9,11 +9,11 @@ let state = {
   priceMode: "market", // market | limit
   entryPrice: "",
   stopLoss: "",
-  riskAmount: ""
-  state.priceSource = null;
-  state.marketPrice = null;
-
+  riskAmount: "",
+  priceSource: null,
+  marketPrice: null
 };
+
 
 // Tab switching
 tabs.forEach(function (tab) {
@@ -119,35 +119,31 @@ function bindPositionEvents() {
   });
 
   document.querySelectorAll('input[name="priceMode"]').forEach(function (radio) {
-  radio.addEventListener("change", function (e) {
-    state.priceMode = e.target.value;
+    radio.addEventListener("change", function (e) {
+      state.priceMode = e.target.value;
 
-    if (state.priceMode === "market") {
-      
-      state.entryPrice = "";
-      state.priceSource = "Fetching price...";
-      
-      renderPositionSize();
-      getBestPrice(state.token)
-        .then(result => {
-          state.entryPrice = result.price;
-          state.priceSource = result.exchange + " " + result.market;
-          renderPositionSize();
-        })
-        .catch(() => {
-          state.entryPrice = "";
-          state.priceSource = "Unavailable";
-          renderPositionSize();
-        });
-            
-    } else {
-      state.entryPrice = "";
-    }
+      if (state.priceMode === "market") {
+        state.entryPrice = "";
+        state.priceSource = "Fetching price...";
+        renderPositionSize();
 
-    renderPositionSize();
+        getBestPrice(state.token)
+          .then(result => {
+            state.entryPrice = result.price;
+            state.priceSource = result.exchange + " " + result.market;
+            renderPositionSize();
+          })
+          .catch(() => {
+            state.entryPrice = "";
+            state.priceSource = "Unavailable";
+            renderPositionSize();
+          });
+      } else {
+        state.entryPrice = "";
+        renderPositionSize();
+      }
+    });
   });
-});
-
 }
 
 function calculate() {
@@ -174,25 +170,20 @@ function calculate() {
   const size = risk / riskPerUnit;
   const notional = size * entry;
 
-  document.getElementById("result").innerHTML =
-    '<h3>Result</h3>' +
-    '<p><strong>Position Size:</strong> ' + size.toFixed(6) + ' ' + state.token + '</p>' +
-    '<p><strong>Notional Value:</strong> $' + notional.toFixed(2) + '</p>' +
-    '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(2) + '</p>';
-  
   let resultHtml =
     '<h3>Result</h3>' +
     '<p><strong>Position Size:</strong> ' + size.toFixed(6) + ' ' + state.token + '</p>' +
     '<p><strong>Notional Value:</strong> $' + notional.toFixed(2) + '</p>' +
     '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(2) + '</p>';
-  
+
   if (state.priceSource) {
     resultHtml +=
       '<p><small>Price source: ' + state.priceSource + '</small></p>';
   }
-  
+
   document.getElementById("result").innerHTML = resultHtml;
 }
+
 
 // Initial render
 render();
