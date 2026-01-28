@@ -4,7 +4,7 @@ const content = document.getElementById("content");
 let activeTab = "position";
 
 let state = {
-  token: "BTC",
+  token: "",
   side: "long",
   priceMode: "market",
   entryPrice: "",
@@ -15,7 +15,7 @@ let state = {
 };
 
 let riskState = {
-  token: "BTC",
+  token: "",
   side: "long",
   priceMode: "market",
   positionSizeMode: "usdt",
@@ -96,7 +96,7 @@ function renderPositionSize() {
     '<h2>Position Size Calculator</h2>' +
     '<label>Token</label>' +
     '<div class="autocomplete-wrapper">' +
-      '<input id="token" type="text" value="' + state.token + '" placeholder="BTC, ETH, SOL" />' +
+      '<input id="token" type="text" value="' + state.token + '" placeholder="Select token" />' +
       '<div id="tokenSuggestions" class="autocomplete-dropdown"></div>' +
     '</div>' +
     '<label>Position Type</label>' +
@@ -220,7 +220,7 @@ function renderRiskCalculator() {
     '<h2>Risk Calculator</h2>' +
     '<label>Token</label>' +
     '<div class="autocomplete-wrapper">' +
-      '<input id="riskToken" type="text" value="' + riskState.token + '" placeholder="BTC, ETH, SOL" />' +
+      '<input id="riskToken" type="text" value="' + riskState.token + '" placeholder="Select token" />' +
       '<div id="riskTokenSuggestions" class="autocomplete-dropdown"></div>' +
     '</div>' +
     '<label>Position Type</label>' +
@@ -631,6 +631,8 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
     return;
   }
 
+  let isSelectingFromDropdown = false;
+
   // Input event - update suggestions only, don't fetch price yet
   input.addEventListener("input", function (e) {
     const value = e.target.value.trim().toUpperCase();
@@ -641,14 +643,8 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
       riskState.token = value;
     }
 
-    // Show suggestions for any input
-    if (value.length > 0) {
-      updateTokenSuggestions(value, suggestionsId, stateType);
-    } else {
-      // Clear suggestions if input is empty
-      suggestionsDiv.innerHTML = "";
-      suggestionsDiv.style.display = "none";
-    }
+    // Show suggestions for any input or show popular tokens when empty
+    updateTokenSuggestions(value, suggestionsId, stateType);
     
     // NOTE: Price fetching is now only done when token is selected from dropdown
     // or when user explicitly confirms token by pressing Enter
@@ -671,30 +667,26 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
     }
   });
 
-  // Blur event - hide suggestions
+  // Blur event - hide suggestions (but check if we're selecting from dropdown)
   input.addEventListener("blur", function () {
     setTimeout(function () {
-      suggestionsDiv.style.display = "none";
-    }, 200);
+      if (!isSelectingFromDropdown) {
+        suggestionsDiv.style.display = "none";
+      }
+      isSelectingFromDropdown = false;
+    }, 100);
   });
 
-  // Focus event - show suggestions if input has value
+  // Focus event - show suggestions
   input.addEventListener("focus", function () {
-    console.log("Token input focused");
+    isSelectingFromDropdown = false;
     const value = input.value.trim().toUpperCase();
-    
-    // Show suggestions on focus
-    if (value.length > 0) {
-      updateTokenSuggestions(value, suggestionsId, stateType);
-    } else {
-      // Show all tokens if input is empty
-      updateTokenSuggestions("", suggestionsId, stateType);
-    }
-    
-    // Load tokens on first focus (but we have hardcoded list now)
-    if (tokenCache.tokens.length === 0 && !tokenCache.isLoading) {
-      fetchAvailableTokens();
-    }
+    updateTokenSuggestions(value, suggestionsId, stateType);
+  });
+
+  // Prevent dropdown items from causing blur
+  suggestionsDiv.addEventListener("mousedown", function () {
+    isSelectingFromDropdown = true;
   });
 }
 
@@ -719,8 +711,9 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
   let filtered;
   
   if (searchTerm === "" || searchTerm.length === 0) {
-    // Show first 10 tokens if search is empty
-    filtered = tokenCache.tokens.slice(0, 10);
+    // Show popular tokens first when search is empty
+    const popularTokens = ["BTC", "ETH", "SOL", "XRP", "ADA", "BNB", "DOGE", "AVAX", "LINK", "MATIC"];
+    filtered = popularTokens;
   } else {
     // Filter by search term
     filtered = tokenCache.tokens.filter(function (token) {
