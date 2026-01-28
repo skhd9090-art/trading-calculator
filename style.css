@@ -1,57 +1,103 @@
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: #f4f6fa;
+  color: #333;
 }
 
 #app {
-  max-width: 420px;
-  margin: auto;
+  max-width: 480px;
+  margin: 0 auto;
   background: #fff;
   min-height: 100vh;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
 header {
-  padding: 16px;
-  background: #2f6fed;
+  padding: 20px 16px 16px;
+  background: linear-gradient(135deg, #2f6fed 0%, #1e4fcd 100%);
   color: white;
+}
+
+header h1 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  font-weight: 600;
 }
 
 nav {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
 }
 
 .tab {
   flex: 1;
-  padding: 8px;
+  padding: 10px 12px;
   border: none;
-  background: #ffffff33;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-  border-radius: 6px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .tab.active {
   background: white;
   color: #2f6fed;
+  font-weight: 600;
 }
 
 main {
-  padding: 16px;
+  padding: 20px 16px;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #2f6fed;
 }
 
 label {
   display: block;
-  margin-top: 12px;
+  margin-top: 16px;
+  margin-bottom: 6px;
   font-weight: 600;
+  font-size: 14px;
+  color: #555;
 }
 
-input {
+input[type="text"],
+input[type="number"] {
   width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  outline: none;
+  border-color: #2f6fed;
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.1);
+}
+
+input:disabled {
+  background: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .toggle {
@@ -62,11 +108,19 @@ input {
 
 .toggle button {
   flex: 1;
-  padding: 8px;
-  border: 1px solid #2f6fed;
+  padding: 10px;
+  border: 2px solid #2f6fed;
   background: white;
   color: #2f6fed;
-  border-radius: 6px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle button:hover {
+  background: #f0f5ff;
 }
 
 .toggle button.active {
@@ -74,18 +128,90 @@ input {
   color: white;
 }
 
-hr {
-  margin: 16px 0;
-}
-
 .radio-group {
-  margin-top: 6px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .radio-group label {
-  display: block;
+  display: flex;
+  align-items: center;
   font-weight: normal;
-  margin-top: 4px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
+.radio-group label:hover {
+  background: #f9f9f9;
+  border-color: #2f6fed;
+}
 
+.radio-group input[type="radio"] {
+  width: auto;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+#result {
+  background: #f8f9ff;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e7ff;
+}
+
+#result h3 {
+  font-size: 16px;
+  color: #2f6fed;
+  margin-bottom: 12px;
+}
+
+#result p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#result .result-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2f6fed;
+  margin: 12px 0;
+}
+
+#result .error {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+#result .price-source {
+  font-size: 12px;
+  color: #888;
+  margin-top: 12px;
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  #app {
+    box-shadow: none;
+  }
+  
+  main {
+    padding: 16px 12px;
+  }
+  
+  header {
+    padding: 16px 12px 12px;
+  }
+}
