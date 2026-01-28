@@ -40,3 +40,41 @@ nav {
 main {
   padding: 16px;
 }
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
+.toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.toggle button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #2f6fed;
+  background: white;
+  color: #2f6fed;
+  border-radius: 6px;
+}
+
+.toggle button.active {
+  background: #2f6fed;
+  color: white;
+}
+
+hr {
+  margin: 16px 0;
+}
+
