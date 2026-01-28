@@ -1,0 +1,42 @@
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  margin: 0;
+  background: #f4f6fa;
+}
+
+#app {
+  max-width: 420px;
+  margin: auto;
+  background: #fff;
+  min-height: 100vh;
+}
+
+header {
+  padding: 16px;
+  background: #2f6fed;
+  color: white;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: #ffffff33;
+  color: white;
+  border-radius: 6px;
+}
+
+.tab.active {
+  background: white;
+  color: #2f6fed;
+}
+
+main {
+  padding: 16px;
+}
