@@ -116,7 +116,7 @@ function bindPositionEvents() {
   const stopLossInput = document.getElementById("stopLoss");
   const riskAmountInput = document.getElementById("riskAmount");
 
-  // Handle token autocomplete
+  // Setup token input with autocomplete
   handleTokenInput("token", "tokenSuggestions", "position");
 
   longBtn.addEventListener("click", function () {
@@ -242,7 +242,7 @@ function bindRiskEvents() {
   const entryPriceInput = document.getElementById("riskEntryPrice");
   const stopLossInput = document.getElementById("riskStopLoss");
 
-  // Handle token autocomplete
+  // Setup token input with autocomplete
   handleTokenInput("riskToken", "riskTokenSuggestions", "risk");
 
   longBtn.addEventListener("click", function () {
@@ -586,8 +586,9 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
   const input = document.getElementById(inputId);
   const suggestionsDiv = document.getElementById(suggestionsId);
 
-  if (!input) return;
+  if (!input || !suggestionsDiv) return;
 
+  // Input event - update suggestions
   input.addEventListener("input", function (e) {
     const value = e.target.value.trim().toUpperCase();
     
@@ -603,35 +604,30 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
       return;
     }
 
-    if (value.length > 0) {
-      updateTokenSuggestions(value, suggestionsId, stateType);
-    }
+    updateTokenSuggestions(value, suggestionsId, stateType);
 
-    // Fetch price if market mode and token length >= 1
-    if (value.length > 0) {
-      if (stateType === "position" && state.priceMode === "market") {
-        fetchMarketPrice();
-      } else if (stateType === "risk" && riskState.priceMode === "market") {
-        fetchRiskMarketPrice();
-      }
+    // Fetch price if market mode
+    if (stateType === "position" && state.priceMode === "market") {
+      fetchMarketPrice();
+    } else if (stateType === "risk" && riskState.priceMode === "market") {
+      fetchRiskMarketPrice();
     }
   });
 
+  // Blur event - hide suggestions
   input.addEventListener("blur", function () {
     setTimeout(function () {
       suggestionsDiv.style.display = "none";
     }, 200);
   });
 
+  // Focus event - show suggestions if input has value
   input.addEventListener("focus", function () {
     const value = input.value.trim().toUpperCase();
-    if (value.length > 0) {
+    if (value.length > 0 && suggestionsDiv.innerHTML) {
       suggestionsDiv.style.display = "block";
     }
-  });
-
-  // Load tokens on focus
-  input.addEventListener("focus", function () {
+    // Load tokens on first focus
     if (tokenCache.tokens.length === 0 && !tokenCache.isLoading) {
       fetchAvailableTokens();
     }
