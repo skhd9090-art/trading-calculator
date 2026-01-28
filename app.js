@@ -36,6 +36,34 @@ let tokenCache = {
   isLoading: false
 };
 
+// Format numbers with proper decimal places for very small numbers
+function formatPrice(num) {
+  if (!num || num === 0) return "0";
+  
+  num = Number(num);
+  
+  // For very small numbers (< 0.0001), use more decimal places
+  if (num < 0.0001 && num > 0) {
+    // Show up to 10 decimal places for very small numbers
+    let formatted = num.toFixed(10);
+    // Remove trailing zeros but keep at least 6 decimal places
+    formatted = formatted.replace(/\.?0+$/, '');
+    if (formatted.split('.')[1] && formatted.split('.')[1].length < 6) {
+      formatted = num.toFixed(6).replace(/\.?0+$/, '');
+    }
+    return formatted;
+  }
+  
+  // For numbers >= 0.0001, use standard formatting
+  if (num < 1) {
+    return num.toFixed(6).replace(/\.?0+$/, '');
+  } else if (num < 1000) {
+    return num.toFixed(2).replace(/\.?0+$/, '');
+  } else {
+    return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+}
+
 tabs.forEach(function (tab) {
   tab.addEventListener("click", function () {
     tabs.forEach(function (t) {
@@ -61,7 +89,7 @@ function renderPositionSize() {
   const priceDisplay = state.isFetchingPrice
     ? "Fetching..."
     : state.entryPrice
-    ? "$" + Number(state.entryPrice).toLocaleString()
+    ? "$" + formatPrice(state.entryPrice)
     : "";
 
   content.innerHTML =
@@ -185,7 +213,7 @@ function renderRiskCalculator() {
   const priceDisplay = riskState.isFetchingPrice
     ? "Fetching..."
     : riskState.entryPrice
-    ? "$" + Number(riskState.entryPrice).toLocaleString()
+    ? "$" + formatPrice(riskState.entryPrice)
     : "";
 
   content.innerHTML =
@@ -379,8 +407,8 @@ function calculateRisk() {
 
   let resultHtml =
     '<h3>Total Risk</h3>' +
-    '<p class="result-value">$' + totalRisk.toFixed(2) + '</p>' +
-    '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(4) + '</p>';
+    '<p class="result-value">$' + formatPrice(totalRisk) + '</p>' +
+    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
 
   if (riskState.priceSource) {
     resultHtml +=
@@ -442,9 +470,9 @@ function calculate() {
 
   let resultHtml =
     '<h3>Position Size</h3>' +
-    '<p class="result-value">' + size.toFixed(8) + ' ' + state.token + '</p>' +
-    '<p><strong>Notional Value:</strong> $' + notional.toFixed(2) + '</p>' +
-    '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(4) + '</p>';
+    '<p class="result-value">' + formatPrice(size) + ' ' + state.token + '</p>' +
+    '<p><strong>Notional Value:</strong> $' + formatPrice(notional) + '</p>' +
+    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
 
   if (state.priceSource) {
     resultHtml +=
@@ -717,22 +745,34 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
 
   // Add click handlers to suggestions
   document.querySelectorAll(".suggestion-item[data-token]").forEach(function (item) {
-    item.addEventListener("click", function () {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
       const selectedToken = this.getAttribute("data-token");
+      
+      // Hide dropdown first
+      suggestionsDiv.style.display = "none";
+      
       if (stateType === "position") {
         state.token = selectedToken;
-        document.getElementById("token").value = selectedToken;
+        const tokenInput = document.getElementById("token");
+        if (tokenInput) {
+          tokenInput.value = selectedToken;
+        }
         if (state.priceMode === "market") {
           fetchMarketPrice();
         }
       } else if (stateType === "risk") {
         riskState.token = selectedToken;
-        document.getElementById("riskToken").value = selectedToken;
+        const riskTokenInput = document.getElementById("riskToken");
+        if (riskTokenInput) {
+          riskTokenInput.value = selectedToken;
+        }
         if (riskState.priceMode === "market") {
           fetchRiskMarketPrice();
         }
       }
-      suggestionsDiv.style.display = "none";
     });
   });
 }
