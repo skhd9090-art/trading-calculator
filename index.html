@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Calculate position size, risk, and stop loss for trading" />
+  <meta name="theme-color" content="#2f6fed" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
   <title>Trading Calculator</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -24,5 +28,13 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch((err) => console.log('Service Worker registration failed:', err));
+    }
+  </script>
 </body>
 </html>
