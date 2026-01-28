@@ -158,6 +158,36 @@ input:disabled {
   cursor: pointer;
 }
 
+.size-mode-options {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.size-mode-options label {
+  display: flex;
+  align-items: center;
+  font-weight: normal;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.size-mode-options label:hover {
+  background: #f9f9f9;
+  border-color: #2f6fed;
+}
+
+.size-mode-options input[type="radio"] {
+  width: auto;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
 hr {
   margin: 24px 0;
   border: none;
@@ -196,6 +226,44 @@ hr {
 }
 
 #result .price-source {
+  font-size: 12px;
+  color: #888;
+  margin-top: 12px;
+  font-style: italic;
+}
+
+#riskResult {
+  background: #f8f9ff;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e7ff;
+}
+
+#riskResult h3 {
+  font-size: 16px;
+  color: #2f6fed;
+  margin-bottom: 12px;
+}
+
+#riskResult p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#riskResult .result-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2f6fed;
+  margin: 12px 0;
+}
+
+#riskResult .error {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+#riskResult .price-source {
   font-size: 12px;
   color: #888;
   margin-top: 12px;
