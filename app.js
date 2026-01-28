@@ -10,6 +10,9 @@ let state = {
   entryPrice: "",
   stopLoss: "",
   riskAmount: ""
+  state.priceSource = null;
+  state.marketPrice = null;
+
 };
 
 // Tab switching
@@ -120,7 +123,18 @@ function bindPositionEvents() {
     state.priceMode = e.target.value;
 
     if (state.priceMode === "market") {
-      state.entryPrice = 90000;
+      getBestPrice(state.token)
+        .then(result => {
+          state.entryPrice = result.price;
+          state.priceSource = result.exchange + " " + result.market;
+          renderPositionSize();
+        })
+        .catch(() => {
+          state.entryPrice = "";
+          state.priceSource = "Unavailable";
+          renderPositionSize();
+        });
+            
     } else {
       state.entryPrice = "";
     }
@@ -164,3 +178,71 @@ function calculate() {
 
 // Initial render
 render();
+
+async function getBestPrice(token) {
+  const symbol = token.toUpperCase() + "USDT";
+
+  // 1️⃣ Binance Futures
+  try {
+    const res = await fetch(
+      "https://fapi.binance.com/fapi/v1/ticker/price?symbol=" + symbol
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        price: Number(data.price),
+        exchange: "Binance",
+        market: "Futures"
+      };
+    }
+  } catch (e) {}
+
+  // 2️⃣ Binance Spot
+  try {
+    const res = await fetch(
+      "https://api.binance.com/api/v3/ticker/price?symbol=" + symbol
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        price: Number(data.price),
+        exchange: "Binance",
+        market: "Spot"
+      };
+    }
+  } catch (e) {}
+
+  // 3️⃣ MEXC Futures
+  try {
+    const res = await fetch(
+      "https://contract.mexc.com/api/v1/contract/ticker?symbol=" + token + "_USDT"
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.data && data.data.lastPrice) {
+        return {
+          price: Number(data.data.lastPrice),
+          exchange: "MEXC",
+          market: "Futures"
+        };
+      }
+    }
+  } catch (e) {}
+
+  // 4️⃣ MEXC Spot
+  try {
+    const res = await fetch(
+      "https://api.mexc.com/api/v3/ticker/price?symbol=" + symbol
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        price: Number(data.price),
+        exchange: "MEXC",
+        market: "Spot"
+      };
+    }
+  } catch (e) {}
+
+  throw new Error("Price not available");
+}
