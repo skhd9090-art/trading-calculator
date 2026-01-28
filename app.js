@@ -6,6 +6,7 @@ let activeTab = "position";
 let state = {
   token: "BTC",
   side: "long",
+  priceMode: "market", // market | limit
   entryPrice: "",
   stopLoss: "",
   riskAmount: ""
@@ -46,8 +47,23 @@ function renderPositionSize() {
       '<button id="shortBtn">Short</button>' +
     '</div>' +
 
+    '<label>Price Mode</label>' +
+    '<div class="radio-group">' +
+      '<label>' +
+        '<input type="radio" name="priceMode" value="market" ' + (state.priceMode === "market" ? "checked" : "") + ' />' +
+        ' Market Price (mock: 90000)' +
+      '</label>' +
+      '<label>' +
+        '<input type="radio" name="priceMode" value="limit" ' + (state.priceMode === "limit" ? "checked" : "") + ' />' +
+        ' Limit Price' +
+      '</label>' +
+    '</div>' +
+    
     '<label>Entry Price</label>' +
-    '<input id="entryPrice" type="number" placeholder="90000" />' +
+    '<input id="entryPrice" type="number" ' +
+    (state.priceMode === "market" ? 'disabled value="90000"' : 'placeholder="Enter limit price"') +
+    ' />' +
+
 
     '<label>Stop Loss Price</label>' +
     '<input id="stopLoss" type="number" placeholder="89000" />' +
@@ -98,6 +114,21 @@ function bindPositionEvents() {
     state.riskAmount = e.target.value;
     calculate();
   });
+
+  document.querySelectorAll('input[name="priceMode"]').forEach(function (radio) {
+  radio.addEventListener("change", function (e) {
+    state.priceMode = e.target.value;
+
+    if (state.priceMode === "market") {
+      state.entryPrice = 90000;
+    } else {
+      state.entryPrice = "";
+    }
+
+    renderPositionSize();
+  });
+});
+
 }
 
 function calculate() {
