@@ -78,3 +78,14 @@ hr {
   margin: 16px 0;
 }
 
+.radio-group {
+  margin-top: 6px;
+}
+
+.radio-group label {
+  display: block;
+  font-weight: normal;
+  margin-top: 4px;
+}
+
+
