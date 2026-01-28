@@ -26,6 +26,18 @@ let riskState = {
   isFetchingPrice: false
 };
 
+let stopLossState = {
+  token: "",
+  side: "long",
+  priceMode: "market",
+  positionSizeMode: "usdt",
+  positionSize: "",
+  entryPrice: "",
+  riskAmount: "",
+  priceSource: null,
+  isFetchingPrice: false
+};
+
 let tokenCache = {
   tokens: [
     "BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "LINK", "MATIC",
@@ -80,8 +92,8 @@ function render() {
     renderPositionSize();
   } else if (activeTab === "risk") {
     renderRiskCalculator();
-  } else {
-    content.innerHTML = "<p>Stop loss calculator coming soon...</p>";
+  } else if (activeTab === "stoploss") {
+    renderStopLossCalculator();
   }
 }
 
@@ -129,14 +141,6 @@ function renderPositionSize() {
   updateSideUI();
   bindPositionEvents();
   calculate();
-  
-  // Focus on token input after a short delay to trigger autocomplete setup
-  setTimeout(function() {
-    const tokenInput = document.getElementById("token");
-    if (tokenInput) {
-      tokenInput.focus();
-    }
-  }, 100);
 }
 
 function updateSideUI() {
@@ -239,6 +243,12 @@ function renderRiskCalculator() {
         ' Limit Price' +
       '</label>' +
     '</div>' +
+    '<label>Entry Price</label>' +
+    '<input id="riskEntryPrice" type="number" step="any" ' +
+    (riskState.priceMode === "market" ? 'disabled value="' + (riskState.entryPrice || "") + '"' : 'value="' + (riskState.entryPrice || "") + '" placeholder="Enter entry price"') +
+    ' />' +
+    '<label>Stop Loss Price</label>' +
+    '<input id="riskStopLoss" type="number" step="any" value="' + (riskState.stopLoss || "") + '" placeholder="Enter stop loss price" />' +
     '<label>Position Size</label>' +
     '<div class="size-mode-options">' +
       '<label>' +
@@ -251,12 +261,6 @@ function renderRiskCalculator() {
       '</label>' +
     '</div>' +
     '<input id="riskPositionSize" type="number" step="any" value="' + (riskState.positionSize || "") + '" placeholder="Enter position size" />' +
-    '<label>Entry Price</label>' +
-    '<input id="riskEntryPrice" type="number" step="any" ' +
-    (riskState.priceMode === "market" ? 'disabled value="' + (riskState.entryPrice || "") + '"' : 'value="' + (riskState.entryPrice || "") + '" placeholder="Enter entry price"') +
-    ' />' +
-    '<label>Stop Loss Price</label>' +
-    '<input id="riskStopLoss" type="number" step="any" value="' + (riskState.stopLoss || "") + '" placeholder="Enter stop loss price" />' +
     '<hr />' +
     '<div id="riskResult"></div>';
 
@@ -369,6 +373,228 @@ function fetchRiskMarketPrice() {
     });
 }
 
+function renderStopLossCalculator() {
+  const priceDisplay = stopLossState.isFetchingPrice
+    ? "Fetching..."
+    : stopLossState.entryPrice
+    ? "$" + formatPrice(stopLossState.entryPrice)
+    : "";
+
+  content.innerHTML =
+    '<h2>Stop Loss Calculator</h2>' +
+    '<label>Token</label>' +
+    '<div class="autocomplete-wrapper">' +
+      '<input id="stopLossToken" type="text" value="' + (stopLossState.token || "") + '" placeholder="Select token" />' +
+      '<div id="stopLossTokenSuggestions" class="autocomplete-dropdown"></div>' +
+    '</div>' +
+    '<label>Position Type</label>' +
+    '<div class="toggle">' +
+      '<button id="stopLossLongBtn">Long</button>' +
+      '<button id="stopLossShortBtn">Short</button>' +
+    '</div>' +
+    '<label>Price Mode</label>' +
+    '<div class="radio-group">' +
+      '<label>' +
+        '<input type="radio" name="stopLossPriceMode" value="market" ' + (stopLossState.priceMode === "market" ? "checked" : "") + ' />' +
+        ' Market Price' + (priceDisplay ? " (" + priceDisplay + ")" : "") +
+      '</label>' +
+      '<label>' +
+        '<input type="radio" name="stopLossPriceMode" value="limit" ' + (stopLossState.priceMode === "limit" ? "checked" : "") + ' />' +
+        ' Limit Price' +
+      '</label>' +
+    '</div>' +
+    '<label>Entry Price</label>' +
+    '<input id="stopLossEntryPrice" type="number" step="any" ' +
+    (stopLossState.priceMode === "market" ? 'disabled value="' + (stopLossState.entryPrice || "") + '"' : 'value="' + (stopLossState.entryPrice || "") + '" placeholder="Enter entry price"') +
+    ' />' +
+    '<label>Risk Amount (USDT)</label>' +
+    '<input id="stopLossRiskAmount" type="number" step="any" value="' + (stopLossState.riskAmount || "") + '" placeholder="Enter risk amount" />' +
+    '<label>Position Size</label>' +
+    '<div class="size-mode-options">' +
+      '<label>' +
+        '<input type="radio" name="stopLossPositionSizeMode" value="usdt" ' + (stopLossState.positionSizeMode === "usdt" ? "checked" : "") + ' />' +
+        ' In USDT (Notional Value)' +
+      '</label>' +
+      '<label>' +
+        '<input type="radio" name="stopLossPositionSizeMode" value="units" ' + (stopLossState.positionSizeMode === "units" ? "checked" : "") + ' />' +
+        ' In ' + stopLossState.token + ' Units' +
+      '</label>' +
+    '</div>' +
+    '<input id="stopLossPositionSize" type="number" step="any" value="' + (stopLossState.positionSize || "") + '" placeholder="Enter position size" />' +
+    '<hr />' +
+    '<div id="stopLossResult"></div>';
+
+  updateStopLossSideUI();
+  bindStopLossEvents();
+  calculateStopLoss();
+}
+
+function updateStopLossSideUI() {
+  const longBtn = document.getElementById("stopLossLongBtn");
+  const shortBtn = document.getElementById("stopLossShortBtn");
+  if (longBtn && shortBtn) {
+    longBtn.classList.toggle("active", stopLossState.side === "long");
+    shortBtn.classList.toggle("active", stopLossState.side === "short");
+  }
+}
+
+function bindStopLossEvents() {
+  const tokenInput = document.getElementById("stopLossToken");
+  const longBtn = document.getElementById("stopLossLongBtn");
+  const shortBtn = document.getElementById("stopLossShortBtn");
+  const positionSizeInput = document.getElementById("stopLossPositionSize");
+  const entryPriceInput = document.getElementById("stopLossEntryPrice");
+  const riskAmountInput = document.getElementById("stopLossRiskAmount");
+
+  // Setup token input with autocomplete
+  handleTokenInput("stopLossToken", "stopLossTokenSuggestions", "stoploss");
+
+  longBtn.addEventListener("click", function () {
+    stopLossState.side = "long";
+    updateStopLossSideUI();
+    calculateStopLoss();
+  });
+
+  shortBtn.addEventListener("click", function () {
+    stopLossState.side = "short";
+    updateStopLossSideUI();
+    calculateStopLoss();
+  });
+
+  if (positionSizeInput) {
+    positionSizeInput.addEventListener("input", function (e) {
+      stopLossState.positionSize = e.target.value;
+      calculateStopLoss();
+    });
+  }
+
+  if (entryPriceInput) {
+    entryPriceInput.addEventListener("input", function (e) {
+      stopLossState.entryPrice = e.target.value;
+      calculateStopLoss();
+    });
+  }
+
+  if (riskAmountInput) {
+    riskAmountInput.addEventListener("input", function (e) {
+      stopLossState.riskAmount = e.target.value;
+      calculateStopLoss();
+    });
+  }
+
+  document.querySelectorAll('input[name="stopLossPriceMode"]').forEach(function (radio) {
+    radio.addEventListener("change", function (e) {
+      stopLossState.priceMode = e.target.value;
+
+      if (stopLossState.priceMode === "market") {
+        if (stopLossState.token) {
+          fetchStopLossMarketPrice();
+        }
+      } else {
+        stopLossState.entryPrice = "";
+        stopLossState.priceSource = null;
+        renderStopLossCalculator();
+      }
+    });
+  });
+
+  document.querySelectorAll('input[name="stopLossPositionSizeMode"]').forEach(function (radio) {
+    radio.addEventListener("change", function (e) {
+      stopLossState.positionSizeMode = e.target.value;
+      renderStopLossCalculator();
+    });
+  });
+
+  if (stopLossState.priceMode === "market" && stopLossState.token && !stopLossState.entryPrice && !stopLossState.isFetchingPrice) {
+    fetchStopLossMarketPrice();
+  }
+}
+
+function calculateStopLoss() {
+  const resultDiv = document.getElementById("stopLossResult");
+  if (!resultDiv) return;
+
+  const positionSize = Number(stopLossState.positionSize);
+  const entry = Number(stopLossState.entryPrice);
+  const riskAmount = Number(stopLossState.riskAmount);
+
+  if (!positionSize || !entry || !riskAmount) {
+    resultDiv.innerHTML = "";
+    return;
+  }
+
+  // Calculate units if position size is in USDT
+  let units = stopLossState.positionSizeMode === "usdt" 
+    ? positionSize / entry 
+    : positionSize;
+
+  // Calculate risk per unit
+  const riskPerUnit = riskAmount / units;
+
+  // Calculate stop loss price
+  let stopLossPrice;
+  if (stopLossState.side === "long") {
+    stopLossPrice = entry - riskPerUnit;
+  } else {
+    stopLossPrice = entry + riskPerUnit;
+  }
+
+  if (stopLossPrice <= 0) {
+    resultDiv.innerHTML =
+      '<p class="error">Invalid calculation: Stop loss price cannot be negative</p>';
+    return;
+  }
+
+  // Calculate risk percentage
+  const riskPercentage = (riskPerUnit / entry) * 100;
+
+  // Calculate notional value if needed
+  const notionalValue = units * entry;
+
+  let resultHtml =
+    '<h3>Stop Loss Price</h3>' +
+    '<p class="result-value">$' + formatPrice(stopLossPrice) + '</p>';
+
+  if (stopLossState.positionSizeMode === "usdt") {
+    resultHtml += '<p><strong>Token Units:</strong> ' + formatPrice(units) + ' ' + stopLossState.token + '</p>';
+  } else {
+    resultHtml += '<p><strong>Notional Value:</strong> $' + formatPrice(notionalValue) + '</p>';
+  }
+  
+  resultHtml +=
+    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
+
+  if (stopLossState.priceSource) {
+    resultHtml +=
+      '<p class="price-source">Price source: ' + stopLossState.priceSource + '</p>';
+  }
+
+  resultDiv.innerHTML = resultHtml;
+}
+
+function fetchStopLossMarketPrice() {
+  if (!stopLossState.token) return;
+
+  stopLossState.isFetchingPrice = true;
+  stopLossState.entryPrice = "";
+  stopLossState.priceSource = null;
+  renderStopLossCalculator();
+
+  getBestPrice(stopLossState.token)
+    .then(result => {
+      stopLossState.entryPrice = result.price;
+      stopLossState.priceSource = result.exchange + " " + result.market;
+      stopLossState.isFetchingPrice = false;
+      renderStopLossCalculator();
+    })
+    .catch((err) => {
+      stopLossState.entryPrice = "";
+      stopLossState.priceSource = "Price unavailable";
+      stopLossState.isFetchingPrice = false;
+      renderStopLossCalculator();
+    });
+}
+
 function calculateRisk() {
   const resultDiv = document.getElementById("riskResult");
   if (!resultDiv) return;
@@ -394,21 +620,31 @@ function calculateRisk() {
     return;
   }
 
-  // Calculate total risk
+  // Calculate total risk and display relevant outputs
   let totalRisk = 0;
+  let resultHtml = '<h3>Total Risk</h3>';
+  
   if (riskState.positionSizeMode === "usdt") {
-    // Position size is in USDT, need to convert to units
+    // Position size is in USDT (Notional Value)
+    // Calculate units from notional value
     const units = positionSize / entry;
     totalRisk = units * riskPerUnit;
+    
+    resultHtml +=
+      '<p class="result-value">$' + formatPrice(totalRisk) + '</p>' +
+      '<p><strong>Token Units:</strong> ' + formatPrice(units) + ' ' + riskState.token + '</p>' +
+      '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
   } else {
     // Position size is in units
+    // Calculate notional value
+    const notionalValue = positionSize * entry;
     totalRisk = positionSize * riskPerUnit;
+    
+    resultHtml +=
+      '<p class="result-value">$' + formatPrice(totalRisk) + '</p>' +
+      '<p><strong>Notional Value:</strong> $' + formatPrice(notionalValue) + '</p>' +
+      '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
   }
-
-  let resultHtml =
-    '<h3>Total Risk</h3>' +
-    '<p class="result-value">$' + formatPrice(totalRisk) + '</p>' +
-    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
 
   if (riskState.priceSource) {
     resultHtml +=
@@ -641,6 +877,8 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
       state.token = value;
     } else if (stateType === "risk") {
       riskState.token = value;
+    } else if (stateType === "stoploss") {
+      stopLossState.token = value;
     }
 
     // Show suggestions for any input or show popular tokens when empty
@@ -661,6 +899,9 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
       } else if (stateType === "risk" && riskState.priceMode === "market" && value) {
         riskState.token = value;
         fetchRiskMarketPrice();
+      } else if (stateType === "stoploss" && stopLossState.priceMode === "market" && value) {
+        stopLossState.token = value;
+        fetchStopLossMarketPrice();
       }
       
       suggestionsDiv.style.display = "none";
@@ -669,23 +910,24 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
 
   // Blur event - hide suggestions (but check if we're selecting from dropdown)
   input.addEventListener("blur", function () {
-    setTimeout(function () {
-      if (!isSelectingFromDropdown) {
-        suggestionsDiv.style.display = "none";
-      }
-      isSelectingFromDropdown = false;
-    }, 100);
+    // Only hide if we're not actively selecting from dropdown
+    if (!isSelectingFromDropdown) {
+      suggestionsDiv.style.display = "none";
+    }
   });
 
   // Focus event - show suggestions
   input.addEventListener("focus", function () {
-    isSelectingFromDropdown = false;
-    const value = input.value.trim().toUpperCase();
-    updateTokenSuggestions(value, suggestionsId, stateType);
+    // Only show if we're not in the middle of a dropdown selection
+    if (!isSelectingFromDropdown) {
+      const value = input.value.trim().toUpperCase();
+      updateTokenSuggestions(value, suggestionsId, stateType);
+    }
   });
 
   // Prevent dropdown items from causing blur
-  suggestionsDiv.addEventListener("mousedown", function () {
+  suggestionsDiv.addEventListener("mousedown", function (e) {
+    e.preventDefault();
     isSelectingFromDropdown = true;
   });
 }
@@ -741,17 +983,23 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
     item.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       
       const selectedToken = this.getAttribute("data-token");
       
-      // Hide dropdown first
+      // Hide dropdown immediately
       suggestionsDiv.style.display = "none";
+      
+      // Set flag to prevent blur from reopening it
+      isSelectingFromDropdown = true;
       
       if (stateType === "position") {
         state.token = selectedToken;
         const tokenInput = document.getElementById("token");
         if (tokenInput) {
           tokenInput.value = selectedToken;
+          // Remove focus to prevent dropdown from reopening
+          tokenInput.blur();
         }
         if (state.priceMode === "market") {
           fetchMarketPrice();
@@ -761,11 +1009,29 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
         const riskTokenInput = document.getElementById("riskToken");
         if (riskTokenInput) {
           riskTokenInput.value = selectedToken;
+          // Remove focus to prevent dropdown from reopening
+          riskTokenInput.blur();
         }
         if (riskState.priceMode === "market") {
           fetchRiskMarketPrice();
         }
+      } else if (stateType === "stoploss") {
+        stopLossState.token = selectedToken;
+        const stopLossTokenInput = document.getElementById("stopLossToken");
+        if (stopLossTokenInput) {
+          stopLossTokenInput.value = selectedToken;
+          // Remove focus to prevent dropdown from reopening
+          stopLossTokenInput.blur();
+        }
+        if (stopLossState.priceMode === "market") {
+          fetchStopLossMarketPrice();
+        }
       }
+      
+      // Reset flag after a brief delay
+      setTimeout(function () {
+        isSelectingFromDropdown = false;
+      }, 150);
     });
   });
 }
