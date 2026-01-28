@@ -123,6 +123,11 @@ function bindPositionEvents() {
     state.priceMode = e.target.value;
 
     if (state.priceMode === "market") {
+      
+      state.entryPrice = "";
+      state.priceSource = "Fetching price...";
+      
+      renderPositionSize();
       getBestPrice(state.token)
         .then(result => {
           state.entryPrice = result.price;
@@ -174,6 +179,19 @@ function calculate() {
     '<p><strong>Position Size:</strong> ' + size.toFixed(6) + ' ' + state.token + '</p>' +
     '<p><strong>Notional Value:</strong> $' + notional.toFixed(2) + '</p>' +
     '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(2) + '</p>';
+  
+  let resultHtml =
+    '<h3>Result</h3>' +
+    '<p><strong>Position Size:</strong> ' + size.toFixed(6) + ' ' + state.token + '</p>' +
+    '<p><strong>Notional Value:</strong> $' + notional.toFixed(2) + '</p>' +
+    '<p><strong>Risk per Unit:</strong> $' + riskPerUnit.toFixed(2) + '</p>';
+  
+  if (state.priceSource) {
+    resultHtml +=
+      '<p><small>Price source: ' + state.priceSource + '</small></p>';
+  }
+  
+  document.getElementById("result").innerHTML = resultHtml;
 }
 
 // Initial render
