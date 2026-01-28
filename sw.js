@@ -1,9 +1,10 @@
 const CACHE_NAME = 'trading-calculator-v1';
+const BASE_PATH = '/trading-calculator';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js'
+  BASE_PATH + '/',
+  BASE_PATH + '/index.html',
+  BASE_PATH + '/style.css',
+  BASE_PATH + '/app.js'
 ];
 
 // Install event - cache files
