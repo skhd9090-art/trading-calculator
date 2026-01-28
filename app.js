@@ -603,7 +603,7 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
     return;
   }
 
-  // Input event - update suggestions
+  // Input event - update suggestions only, don't fetch price yet
   input.addEventListener("input", function (e) {
     const value = e.target.value.trim().toUpperCase();
     
@@ -616,16 +616,29 @@ function handleTokenInput(inputId, suggestionsId, stateType) {
     // Show suggestions for any input
     if (value.length > 0) {
       updateTokenSuggestions(value, suggestionsId, stateType);
-      
-      // Fetch price if market mode
-      if (stateType === "position" && state.priceMode === "market") {
-        fetchMarketPrice();
-      } else if (stateType === "risk" && riskState.priceMode === "market") {
-        fetchRiskMarketPrice();
-      }
     } else {
       // Clear suggestions if input is empty
       suggestionsDiv.innerHTML = "";
+      suggestionsDiv.style.display = "none";
+    }
+    
+    // NOTE: Price fetching is now only done when token is selected from dropdown
+    // or when user explicitly confirms token by pressing Enter
+  });
+
+  // KeyPress event - fetch price when user presses Enter
+  input.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+      const value = e.target.value.trim().toUpperCase();
+      
+      if (stateType === "position" && state.priceMode === "market" && value) {
+        state.token = value;
+        fetchMarketPrice();
+      } else if (stateType === "risk" && riskState.priceMode === "market" && value) {
+        riskState.token = value;
+        fetchRiskMarketPrice();
+      }
+      
       suggestionsDiv.style.display = "none";
     }
   });
