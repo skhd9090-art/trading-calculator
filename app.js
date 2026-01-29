@@ -23,6 +23,7 @@ let riskState = {
   positionSize: "",
   entryPrice: "",
   stopLoss: "",
+  takeProfit: "",
   priceSource: null,
   isFetchingPrice: false
 };
@@ -35,6 +36,7 @@ let stopLossState = {
   positionSize: "",
   entryPrice: "",
   riskAmount: "",
+  takeProfit: "",
   priceSource: null,
   isFetchingPrice: false
 };
@@ -175,6 +177,34 @@ function updateTradingViewLink() {
     '<a href="https://www.tradingview.com/chart/?symbol=BINANCE:' + token + 'USDT.P" target="_blank" rel="noopener noreferrer">View chart on TradingView ↗</a>';
 }
 
+function updateRiskTradingViewLink() {
+  const linkDiv = document.getElementById("riskTvLink");
+  if (!linkDiv) return;
+
+  if (!riskState.token) {
+    linkDiv.innerHTML = "";
+    return;
+  }
+
+  const token = riskState.token.toUpperCase();
+  linkDiv.innerHTML =
+    '<a href="https://www.tradingview.com/chart/?symbol=BINANCE:' + token + 'USDT.P" target="_blank" rel="noopener noreferrer">View chart on TradingView ↗</a>';
+}
+
+function updateStopLossTradingViewLink() {
+  const linkDiv = document.getElementById("stopLossTvLink");
+  if (!linkDiv) return;
+
+  if (!stopLossState.token) {
+    linkDiv.innerHTML = "";
+    return;
+  }
+
+  const token = stopLossState.token.toUpperCase();
+  linkDiv.innerHTML =
+    '<a href="https://www.tradingview.com/chart/?symbol=BINANCE:' + token + 'USDT.P" target="_blank" rel="noopener noreferrer">View chart on TradingView ↗</a>';
+}
+
 function bindPositionEvents() {
   const tokenInput = document.getElementById("token");
   const longBtn = document.getElementById("longBtn");
@@ -262,6 +292,9 @@ function renderRiskCalculator() {
       '<input id="riskToken" type="text" value="' + riskState.token + '" placeholder="Select token" />' +
       '<div id="riskTokenSuggestions" class="autocomplete-dropdown"></div>' +
     '</div>' +
+    (riskState.token
+      ? '<div id="riskTvLink" class="tv-link"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:' + riskState.token.toUpperCase() + 'USDT.P" target="_blank" rel="noopener noreferrer">View chart on TradingView ↗</a></div>'
+      : '<div id="riskTvLink" class="tv-link"></div>') +
     '<label>Position Type</label>' +
     '<div class="toggle">' +
       '<button id="riskLongBtn">Long</button>' +
@@ -284,6 +317,11 @@ function renderRiskCalculator() {
     ' />' +
     '<label>Stop Loss Price</label>' +
     '<input id="riskStopLoss" type="number" step="any" value="' + (riskState.stopLoss || "") + '" placeholder="Enter stop loss price" />' +
+    '<div id="riskSlMeta" class="input-meta"></div>' +
+    '<label>Take Profit Price</label>' +
+    '<input id="riskTakeProfit" type="number" step="any" value="' + (riskState.takeProfit || "") + '" placeholder="Enter take profit price" />' +
+    '<div id="riskTpMeta" class="input-meta"></div>' +
+    '<div id="riskRrMeta" class="ratio-meta"></div>' +
     '<label>Position Size</label>' +
     '<div class="size-mode-options">' +
       '<label>' +
@@ -320,9 +358,16 @@ function bindRiskEvents() {
   const positionSizeInput = document.getElementById("riskPositionSize");
   const entryPriceInput = document.getElementById("riskEntryPrice");
   const stopLossInput = document.getElementById("riskStopLoss");
+  const takeProfitInput = document.getElementById("riskTakeProfit");
 
   // Setup token input with autocomplete
   handleTokenInput("riskToken", "riskTokenSuggestions", "risk");
+
+  if (tokenInput) {
+    tokenInput.addEventListener("input", function () {
+      updateRiskTradingViewLink();
+    });
+  }
 
   longBtn.addEventListener("click", function () {
     riskState.side = "long";
@@ -353,6 +398,13 @@ function bindRiskEvents() {
   if (stopLossInput) {
     stopLossInput.addEventListener("input", function (e) {
       riskState.stopLoss = e.target.value;
+      calculateRisk();
+    });
+  }
+
+  if (takeProfitInput) {
+    takeProfitInput.addEventListener("input", function (e) {
+      riskState.takeProfit = e.target.value;
       calculateRisk();
     });
   }
@@ -422,6 +474,9 @@ function renderStopLossCalculator() {
       '<input id="stopLossToken" type="text" value="' + (stopLossState.token || "") + '" placeholder="Select token" />' +
       '<div id="stopLossTokenSuggestions" class="autocomplete-dropdown"></div>' +
     '</div>' +
+    (stopLossState.token
+      ? '<div id="stopLossTvLink" class="tv-link"><a href="https://www.tradingview.com/chart/?symbol=BINANCE:' + stopLossState.token.toUpperCase() + 'USDT.P" target="_blank" rel="noopener noreferrer">View chart on TradingView ↗</a></div>'
+      : '<div id="stopLossTvLink" class="tv-link"></div>') +
     '<label>Position Type</label>' +
     '<div class="toggle">' +
       '<button id="stopLossLongBtn">Long</button>' +
@@ -444,6 +499,10 @@ function renderStopLossCalculator() {
     ' />' +
     '<label>Risk Amount (USDT)</label>' +
     '<input id="stopLossRiskAmount" type="number" step="any" value="' + (stopLossState.riskAmount || "") + '" placeholder="Enter risk amount" />' +
+    '<label>Take Profit Price</label>' +
+    '<input id="stopLossTakeProfit" type="number" step="any" value="' + (stopLossState.takeProfit || "") + '" placeholder="Enter take profit price" />' +
+    '<div id="stopLossTpMeta" class="input-meta"></div>' +
+    '<div id="stopLossRrMeta" class="ratio-meta"></div>' +
     '<label>Position Size</label>' +
     '<div class="size-mode-options">' +
       '<label>' +
@@ -480,9 +539,16 @@ function bindStopLossEvents() {
   const positionSizeInput = document.getElementById("stopLossPositionSize");
   const entryPriceInput = document.getElementById("stopLossEntryPrice");
   const riskAmountInput = document.getElementById("stopLossRiskAmount");
+  const takeProfitInput = document.getElementById("stopLossTakeProfit");
 
   // Setup token input with autocomplete
   handleTokenInput("stopLossToken", "stopLossTokenSuggestions", "stoploss");
+
+  if (tokenInput) {
+    tokenInput.addEventListener("input", function () {
+      updateStopLossTradingViewLink();
+    });
+  }
 
   longBtn.addEventListener("click", function () {
     stopLossState.side = "long";
@@ -517,6 +583,13 @@ function bindStopLossEvents() {
     });
   }
 
+  if (takeProfitInput) {
+    takeProfitInput.addEventListener("input", function (e) {
+      stopLossState.takeProfit = e.target.value;
+      calculateStopLoss();
+    });
+  }
+
   document.querySelectorAll('input[name="stopLossPriceMode"]').forEach(function (radio) {
     radio.addEventListener("change", function (e) {
       stopLossState.priceMode = e.target.value;
@@ -547,14 +620,42 @@ function bindStopLossEvents() {
 
 function calculateStopLoss() {
   const resultDiv = document.getElementById("stopLossResult");
+  const tpMeta = document.getElementById("stopLossTpMeta");
+  const rrMeta = document.getElementById("stopLossRrMeta");
   if (!resultDiv) return;
 
   const positionSize = Number(stopLossState.positionSize);
   const entry = Number(stopLossState.entryPrice);
   const riskAmount = Number(stopLossState.riskAmount);
+  const tp = Number(stopLossState.takeProfit);
+
+  let rewardPercentage = null;
+  let tpError = null;
+  let riskPercentage = null;
+
+  if (entry && tp) {
+    if (stopLossState.side === "long" && tp <= entry) {
+      tpError = "Take Profit must be greater than Entry Price for long positions";
+    } else if (stopLossState.side === "short" && tp >= entry) {
+      tpError = "Take Profit must be less than Entry Price for short positions";
+    } else {
+      rewardPercentage = (Math.abs(tp - entry) / entry) * 100;
+    }
+  }
+
+  if (tpMeta) {
+    if (tpError) {
+      tpMeta.innerHTML = '<span class="error">' + tpError + '</span>';
+    } else if (rewardPercentage !== null) {
+      tpMeta.innerHTML = 'Reward: ' + rewardPercentage.toFixed(2) + '%';
+    } else {
+      tpMeta.innerHTML = "";
+    }
+  }
 
   if (!positionSize || !entry || !riskAmount) {
     resultDiv.innerHTML = "";
+    if (rrMeta) rrMeta.innerHTML = "";
     return;
   }
 
@@ -577,11 +678,21 @@ function calculateStopLoss() {
   if (stopLossPrice <= 0) {
     resultDiv.innerHTML =
       '<p class="error">Invalid calculation: Stop loss price cannot be negative</p>';
+    if (rrMeta) rrMeta.innerHTML = "";
     return;
   }
 
   // Calculate risk percentage
-  const riskPercentage = (riskPerUnit / entry) * 100;
+  riskPercentage = (riskPerUnit / entry) * 100;
+
+  if (rrMeta) {
+    if (riskPercentage !== null && rewardPercentage !== null) {
+      const riskRewardRatio = (rewardPercentage / riskPercentage).toFixed(2);
+      rrMeta.innerHTML = 'Risk : Reward 1 : ' + riskRewardRatio;
+    } else {
+      rrMeta.innerHTML = "";
+    }
+  }
 
   // Calculate notional value if needed
   const notionalValue = units * entry;
@@ -632,11 +743,68 @@ function fetchStopLossMarketPrice() {
 
 function calculateRisk() {
   const resultDiv = document.getElementById("riskResult");
+  const slMeta = document.getElementById("riskSlMeta");
+  const tpMeta = document.getElementById("riskTpMeta");
+  const rrMeta = document.getElementById("riskRrMeta");
   if (!resultDiv) return;
 
   let positionSize = Number(riskState.positionSize);
   const stopLoss = Number(riskState.stopLoss);
-  let entry = Number(riskState.entryPrice);
+  const entry = Number(riskState.entryPrice);
+  const tp = Number(riskState.takeProfit);
+
+  let riskPercentage = null;
+  let rewardPercentage = null;
+  let slError = null;
+  let tpError = null;
+
+  if (entry && stopLoss) {
+    const slRiskPerUnit = riskState.side === "long" ? entry - stopLoss : stopLoss - entry;
+    if (slRiskPerUnit <= 0) {
+      slError = "Invalid stop loss for " + riskState.side + " position";
+    } else {
+      riskPercentage = (Math.abs(entry - stopLoss) / entry) * 100;
+    }
+  }
+
+  if (entry && tp) {
+    if (riskState.side === "long" && tp <= entry) {
+      tpError = "Take Profit must be greater than Entry Price for long positions";
+    } else if (riskState.side === "short" && tp >= entry) {
+      tpError = "Take Profit must be less than Entry Price for short positions";
+    } else {
+      rewardPercentage = (Math.abs(tp - entry) / entry) * 100;
+    }
+  }
+
+  if (slMeta) {
+    if (slError) {
+      slMeta.innerHTML = '<span class="error">' + slError + '</span>';
+    } else if (riskPercentage !== null) {
+      slMeta.innerHTML = 'Risk: ' + riskPercentage.toFixed(2) + '%';
+    } else {
+      slMeta.innerHTML = "";
+    }
+  }
+
+  if (tpMeta) {
+    if (tpError) {
+      tpMeta.innerHTML = '<span class="error">' + tpError + '</span>';
+    } else if (rewardPercentage !== null) {
+      tpMeta.innerHTML = 'Reward: ' + rewardPercentage.toFixed(2) + '%';
+    } else {
+      tpMeta.innerHTML = "";
+    }
+  }
+
+  if (rrMeta) {
+    if (riskPercentage !== null && rewardPercentage !== null) {
+      const riskRewardRatio = (rewardPercentage / riskPercentage).toFixed(2);
+      rrMeta.innerHTML = 'Risk : Reward 1 : ' + riskRewardRatio;
+    } else {
+      rrMeta.innerHTML = "";
+    }
+  }
 
   if (!positionSize || !stopLoss || !entry) {
     resultDiv.innerHTML = "";
@@ -1105,6 +1273,7 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
           // Remove focus to prevent dropdown from reopening
           riskTokenInput.blur();
         }
+        updateRiskTradingViewLink();
         if (riskState.priceMode === "market") {
           fetchRiskMarketPrice();
         }
@@ -1116,6 +1285,7 @@ function displaySuggestions(searchTerm, suggestionsDiv, stateType) {
           // Remove focus to prevent dropdown from reopening
           stopLossTokenInput.blur();
         }
+        updateStopLossTradingViewLink();
         if (stopLossState.priceMode === "market") {
           fetchStopLossMarketPrice();
         }
