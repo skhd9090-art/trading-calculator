@@ -255,6 +255,13 @@ input:disabled {
   border-color: #2f6fed;
 }
 
+.converted-value {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #888;
+  font-style: italic;
+}
+
 hr {
   margin: 24px 0;
   border: none;

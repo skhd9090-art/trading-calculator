@@ -358,10 +358,12 @@ function renderRiskCalculator() {
     '</div>' +
     (riskState.positionSizeMode === "usdt" ? 
       '<div class="currency-toggle">' +
-        '<button id="riskPositionSizeUsdtBtn" class="currency-btn active">USDT</button>' +
-        '<button id="riskPositionSizeInrBtn" class="currency-btn">INR</button>' +
+        '<button id="riskPositionSizeUsdtBtn" class="' + (riskState.positionSizeCurrency === "usdt" ? "currency-btn active" : "currency-btn") + '">USDT</button>' +
+        '<button id="riskPositionSizeInrBtn" class="' + (riskState.positionSizeCurrency === "inr" ? "currency-btn active" : "currency-btn") + '">INR</button>' +
       '</div>' : '') +
-    '<input id="riskPositionSize" type="number" step="any" value="' + (riskState.positionSize || "") + '" placeholder="Enter position size" />' +
+    '<input id="riskPositionSize" type="number" step="any" value="' + (riskState.positionSize || "") + '" placeholder="' + (riskState.positionSizeCurrency === "usdt" ? "Enter position size in USDT" : "Enter position size in INR") + '" />' +
+    (riskState.positionSizeMode === "usdt" && riskState.positionSize ? 
+      '<div class="converted-value" id="riskConvertedValue"></div>' : '') +
     '<hr />' +
     '<div id="riskResult"></div>';
 
@@ -394,6 +396,26 @@ function updateRiskCurrencyToggle() {
       inrBtn.classList.add("active");
       positionSizeInput.placeholder = "Enter position size in INR";
     }
+  }
+  updateRiskConvertedValue();
+}
+
+function updateRiskConvertedValue() {
+  const convertedDiv = document.getElementById("riskConvertedValue");
+  if (!convertedDiv || !riskState.positionSize) return;
+
+  const inputValue = Number(riskState.positionSize);
+  if (!inputValue || inputValue <= 0) {
+    convertedDiv.innerHTML = "";
+    return;
+  }
+
+  if (riskState.positionSizeCurrency === "usdt") {
+    const inrValue = convertToINR(inputValue);
+    convertedDiv.innerHTML = "≈ ₹" + Math.floor(inrValue).toLocaleString('en-IN') + " INR";
+  } else {
+    const usdtValue = convertToUSDT(inputValue);
+    convertedDiv.innerHTML = "≈ $" + formatPrice(usdtValue) + " USDT";
   }
 }
 
@@ -435,6 +457,7 @@ function bindRiskEvents() {
       } else {
         riskState.positionSize = inputValue;
       }
+      updateRiskConvertedValue();
       calculateRisk();
     });
   }
@@ -585,10 +608,12 @@ function renderStopLossCalculator() {
     '</div>' +
     (stopLossState.positionSizeMode === "usdt" ? 
       '<div class="currency-toggle">' +
-        '<button id="stopLossPositionSizeUsdtBtn" class="currency-btn active">USDT</button>' +
-        '<button id="stopLossPositionSizeInrBtn" class="currency-btn">INR</button>' +
+        '<button id="stopLossPositionSizeUsdtBtn" class="' + (stopLossState.positionSizeCurrency === "usdt" ? "currency-btn active" : "currency-btn") + '">USDT</button>' +
+        '<button id="stopLossPositionSizeInrBtn" class="' + (stopLossState.positionSizeCurrency === "inr" ? "currency-btn active" : "currency-btn") + '">INR</button>' +
       '</div>' : '') +
-    '<input id="stopLossPositionSize" type="number" step="any" value="' + (stopLossState.positionSize || "") + '" placeholder="Enter position size" />' +
+    '<input id="stopLossPositionSize" type="number" step="any" value="' + (stopLossState.positionSize || "") + '" placeholder="' + (stopLossState.positionSizeCurrency === "usdt" ? "Enter position size in USDT" : "Enter position size in INR") + '" />' +
+    (stopLossState.positionSizeMode === "usdt" && stopLossState.positionSize ? 
+      '<div class="converted-value" id="stopLossConvertedValue"></div>' : '') +
     '<hr />' +
     '<div id="stopLossResult"></div>';
 
@@ -621,6 +646,26 @@ function updateStopLossCurrencyToggle() {
       inrBtn.classList.add("active");
       positionSizeInput.placeholder = "Enter position size in INR";
     }
+  }
+  updateStopLossConvertedValue();
+}
+
+function updateStopLossConvertedValue() {
+  const convertedDiv = document.getElementById("stopLossConvertedValue");
+  if (!convertedDiv || !stopLossState.positionSize) return;
+
+  const inputValue = Number(stopLossState.positionSize);
+  if (!inputValue || inputValue <= 0) {
+    convertedDiv.innerHTML = "";
+    return;
+  }
+
+  if (stopLossState.positionSizeCurrency === "usdt") {
+    const inrValue = convertToINR(inputValue);
+    convertedDiv.innerHTML = "≈ ₹" + Math.floor(inrValue).toLocaleString('en-IN') + " INR";
+  } else {
+    const usdtValue = convertToUSDT(inputValue);
+    convertedDiv.innerHTML = "≈ $" + formatPrice(usdtValue) + " USDT";
   }
 }
 
@@ -662,6 +707,7 @@ function bindStopLossEvents() {
       } else {
         stopLossState.positionSize = inputValue;
       }
+      updateStopLossConvertedValue();
       calculateStopLoss();
     });
   }
