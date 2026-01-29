@@ -527,21 +527,7 @@ function calculateStopLoss() {
 
   const positionSize = Number(stopLossState.positionSize);
   const entry = Number(stopLossState.entryPrice);
-  const stopLoss = Number(stopLossState.stopLoss);
-  const takeProfit = Number(stopLossState.takeProfit);
   const riskAmount = Number(stopLossState.riskAmount);
-
-  if (!positionSize || !entry) {
-    resultDiv.innerHTML = "";
-    return;
-  }
-
-  // Calculate units if position size is in USDT
-  let units = stopLossState.positionSizeMode === "usdt" 
-    ? positionSize / entry 
-    : positionSize;
-
-  // CalriskAmount = Number(stopLossState.riskAmount);
 
   if (!positionSize || !entry || !riskAmount) {
     resultDiv.innerHTML = "";
@@ -587,7 +573,21 @@ function calculateStopLoss() {
   }
   
   resultHtml +=
-    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';topLossState.entryPrice = "";
+    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
+
+  if (stopLossState.priceSource) {
+    resultHtml +=
+      '<p class="price-source">Price source: ' + stopLossState.priceSource + '</p>';
+  }
+
+  resultDiv.innerHTML = resultHtml;
+}
+
+function fetchStopLossMarketPrice() {
+  if (!stopLossState.token) return;
+
+  stopLossState.isFetchingPrice = true;
+  stopLossState.entryPrice = "";
   stopLossState.priceSource = null;
   renderStopLossCalculator();
 
