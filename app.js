@@ -361,8 +361,11 @@ function renderRiskCalculator() {
         '<button id="riskPositionSizeUsdtBtn" class="' + (riskState.positionSizeCurrency === "usdt" ? "currency-btn active" : "currency-btn") + '">USDT</button>' +
         '<button id="riskPositionSizeInrBtn" class="' + (riskState.positionSizeCurrency === "inr" ? "currency-btn active" : "currency-btn") + '">INR</button>' +
       '</div>' : '') +
-    '<input id="riskPositionSize" type="number" step="any" value="' + (riskState.positionSize || "") + '" placeholder="' + (riskState.positionSizeCurrency === "usdt" ? "Enter position size in USDT" : "Enter position size in INR") + '" />' +
-    (riskState.positionSizeMode === "usdt" && riskState.positionSize ? 
+    '<input id="riskPositionSize" type="number" step="any" value="' + 
+    (riskState.positionSize ? 
+      (riskState.positionSizeCurrency === "usdt" ? riskState.positionSize : Math.floor(convertToINR(Number(riskState.positionSize)))) : "") + 
+    '" placeholder="' + (riskState.positionSizeCurrency === "usdt" ? "Enter position size in USDT" : "Enter position size in INR") + '" />' +
+    (riskState.positionSizeMode === "usdt" ? 
       '<div class="converted-value" id="riskConvertedValue"></div>' : '') +
     '<hr />' +
     '<div id="riskResult"></div>';
@@ -402,7 +405,7 @@ function updateRiskCurrencyToggle() {
 
 function updateRiskConvertedValue() {
   const convertedDiv = document.getElementById("riskConvertedValue");
-  if (!convertedDiv || !riskState.positionSize) return;
+  if (!convertedDiv) return;
 
   const inputValue = Number(riskState.positionSize);
   if (!inputValue || inputValue <= 0) {
@@ -414,7 +417,7 @@ function updateRiskConvertedValue() {
     const inrValue = convertToINR(inputValue);
     convertedDiv.innerHTML = "≈ ₹" + Math.floor(inrValue).toLocaleString('en-IN') + " INR";
   } else {
-    const usdtValue = convertToUSDT(inputValue);
+    const usdtValue = inputValue;
     convertedDiv.innerHTML = "≈ $" + formatPrice(usdtValue) + " USDT";
   }
 }
@@ -611,8 +614,11 @@ function renderStopLossCalculator() {
         '<button id="stopLossPositionSizeUsdtBtn" class="' + (stopLossState.positionSizeCurrency === "usdt" ? "currency-btn active" : "currency-btn") + '">USDT</button>' +
         '<button id="stopLossPositionSizeInrBtn" class="' + (stopLossState.positionSizeCurrency === "inr" ? "currency-btn active" : "currency-btn") + '">INR</button>' +
       '</div>' : '') +
-    '<input id="stopLossPositionSize" type="number" step="any" value="' + (stopLossState.positionSize || "") + '" placeholder="' + (stopLossState.positionSizeCurrency === "usdt" ? "Enter position size in USDT" : "Enter position size in INR") + '" />' +
-    (stopLossState.positionSizeMode === "usdt" && stopLossState.positionSize ? 
+    '<input id="stopLossPositionSize" type="number" step="any" value="' + 
+    (stopLossState.positionSize ? 
+      (stopLossState.positionSizeCurrency === "usdt" ? stopLossState.positionSize : Math.floor(convertToINR(Number(stopLossState.positionSize)))) : "") + 
+    '" placeholder="' + (stopLossState.positionSizeCurrency === "usdt" ? "Enter position size in USDT" : "Enter position size in INR") + '" />' +
+    (stopLossState.positionSizeMode === "usdt" ? 
       '<div class="converted-value" id="stopLossConvertedValue"></div>' : '') +
     '<hr />' +
     '<div id="stopLossResult"></div>';
@@ -652,7 +658,7 @@ function updateStopLossCurrencyToggle() {
 
 function updateStopLossConvertedValue() {
   const convertedDiv = document.getElementById("stopLossConvertedValue");
-  if (!convertedDiv || !stopLossState.positionSize) return;
+  if (!convertedDiv) return;
 
   const inputValue = Number(stopLossState.positionSize);
   if (!inputValue || inputValue <= 0) {
@@ -664,7 +670,7 @@ function updateStopLossConvertedValue() {
     const inrValue = convertToINR(inputValue);
     convertedDiv.innerHTML = "≈ ₹" + Math.floor(inrValue).toLocaleString('en-IN') + " INR";
   } else {
-    const usdtValue = convertToUSDT(inputValue);
+    const usdtValue = inputValue;
     convertedDiv.innerHTML = "≈ $" + formatPrice(usdtValue) + " USDT";
   }
 }
