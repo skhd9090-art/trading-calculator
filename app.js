@@ -33,6 +33,8 @@ let stopLossState = {
   positionSizeMode: "usdt",
   positionSize: "",
   entryPrice: "",
+  stopLoss: "",
+  takeProfit: "",
   riskAmount: "",
   priceSource: null,
   isFetchingPrice: false
@@ -407,6 +409,10 @@ function renderStopLossCalculator() {
     '<input id="stopLossEntryPrice" type="number" step="any" ' +
     (stopLossState.priceMode === "market" ? 'disabled value="' + (stopLossState.entryPrice || "") + '"' : 'value="' + (stopLossState.entryPrice || "") + '" placeholder="Enter entry price"') +
     ' />' +
+    '<label>Stop Loss Price</label>' +
+    '<input id="stopLossSLPrice" type="number" step="any" value="' + (stopLossState.stopLoss || "") + '" placeholder="Enter stop loss price" />' +
+    '<label>Take Profit Price</label>' +
+    '<input id="stopLossTPPrice" type="number" step="any" value="' + (stopLossState.takeProfit || "") + '" placeholder="Enter take profit price" />' +
     '<label>Risk Amount (USDT)</label>' +
     '<input id="stopLossRiskAmount" type="number" step="any" value="' + (stopLossState.riskAmount || "") + '" placeholder="Enter risk amount" />' +
     '<label>Position Size</label>' +
@@ -440,6 +446,8 @@ function updateStopLossSideUI() {
 
 function bindStopLossEvents() {
   const tokenInput = document.getElementById("stopLossToken");
+  const slPriceInput = document.getElementById("stopLossSLPrice");
+  const tpPriceInput = document.getElementById("stopLossTPPrice");
   const longBtn = document.getElementById("stopLossLongBtn");
   const shortBtn = document.getElementById("stopLossShortBtn");
   const positionSizeInput = document.getElementById("stopLossPositionSize");
@@ -471,6 +479,20 @@ function bindStopLossEvents() {
   if (entryPriceInput) {
     entryPriceInput.addEventListener("input", function (e) {
       stopLossState.entryPrice = e.target.value;
+      calculateStopLoss();
+    });
+  }
+
+  if (slPriceInput) {
+    slPriceInput.addEventListener("input", function (e) {
+      stopLossState.stopLoss = e.target.value;
+      calculateStopLoss();
+    });
+  }
+
+  if (tpPriceInput) {
+    tpPriceInput.addEventListener("input", function (e) {
+      stopLossState.takeProfit = e.target.value;
       calculateStopLoss();
     });
   }
@@ -516,9 +538,11 @@ function calculateStopLoss() {
 
   const positionSize = Number(stopLossState.positionSize);
   const entry = Number(stopLossState.entryPrice);
+  const stopLoss = Number(stopLossState.stopLoss);
+  const takeProfit = Number(stopLossState.takeProfit);
   const riskAmount = Number(stopLossState.riskAmount);
 
-  if (!positionSize || !entry || !riskAmount) {
+  if (!positionSize || !entry) {
     resultDiv.innerHTML = "";
     return;
   }
@@ -528,41 +552,54 @@ function calculateStopLoss() {
     ? positionSize / entry 
     : positionSize;
 
-  // Calculate risk per unit
-  const riskPerUnit = riskAmount / units;
-
-  // Calculate stop loss price
-  let stopLossPrice;
-  if (stopLossState.side === "long") {
-    stopLossPrice = entry - riskPerUnit;
-  } else {
-    stopLossPrice = entry + riskPerUnit;
-  }
-
-  if (stopLossPrice <= 0) {
-    resultDiv.innerHTML =
-      '<p class="error">Invalid calculation: Stop loss price cannot be negative</p>';
-    return;
-  }
-
-  // Calculate risk percentage
-  const riskPercentage = (riskPerUnit / entry) * 100;
-
-  // Calculate notional value if needed
+  // Calculate notional value
   const notionalValue = units * entry;
 
-  let resultHtml =
-    '<h3>Stop Loss Price</h3>' +
-    '<p class="result-value">$' + formatPrice(stopLossPrice) + '</p>';
+  let resultHtml = '<h3>Trade Analysis</h3>';
+
+  // Risk Calculation - when entry and SL are provided
+  if (stopLoss > 0) {
+    const riskPerUnit = Math.abs(entry - stopLoss);
+    const riskPercentage = (riskPerUnit / entry) * 100;
+    const calculatedRiskAmount = riskPerUnit * units;
+
+    resultHtml += 
+      '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>' +
+      '<p><strong>Risk Percentage:</strong> ' + formatPrice(riskPercentage) + '%</p>' +
+      '<p><strong>Total Risk Amount:</strong> $' + formatPrice(calculatedRiskAmount) + '</p>';
+  }
+
+  // Profit Calculation - when entry and TP are provided
+  if (takeProfit > 0) {
+    const profitPerUnit = Math.abs(takeProfit - entry);
+    const profitPercentage = (profitPerUnit / entry) * 100;
+    const totalProfit = profitPerUnit * units;
+
+    resultHtml += 
+      '<p><strong>Profit per Unit:</strong> $' + formatPrice(profitPerUnit) + '</p>' +
+      '<p><strong>Profit Percentage:</strong> ' + formatPrice(profitPercentage) + '%</p>' +
+      '<p><strong>Total Profit Amount:</strong> $' + formatPrice(totalProfit) + '</p>';
+  }
+
+  // Reward Risk Ratio - when both SL and TP are provided
+  if (stopLoss > 0 && takeProfit > 0) {
+    const riskPerUnit = Math.abs(entry - stopLoss);
+    const profitPerUnit = Math.abs(takeProfit - entry);
+    const rewardRiskRatio = profitPerUnit / riskPerUnit;
+
+    resultHtml += 
+      '<p><strong>Reward Risk Ratio:</strong> 1:' + formatPrice(rewardRiskRatio) + '</p>';
+  }
+
+  // Position Info
+  resultHtml +=
+    '<p><strong>Entry Price:</strong> $' + formatPrice(entry) + '</p>';
 
   if (stopLossState.positionSizeMode === "usdt") {
-    resultHtml += '<p><strong>Token Units:</strong> ' + formatPrice(units) + ' ' + stopLossState.token + '</p>';
+    resultHtml += '<p><strong>Position Size (Units):</strong> ' + formatPrice(units) + ' ' + stopLossState.token + '</p>';
   } else {
     resultHtml += '<p><strong>Notional Value:</strong> $' + formatPrice(notionalValue) + '</p>';
   }
-  
-  resultHtml +=
-    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
 
   if (stopLossState.priceSource) {
     resultHtml +=
