@@ -20,6 +20,7 @@ let riskState = {
   side: "long",
   priceMode: "market",
   positionSizeMode: "usdt",
+  positionSizeCurrency: "usdt",
   positionSize: "",
   entryPrice: "",
   stopLoss: "",
@@ -33,6 +34,7 @@ let stopLossState = {
   side: "long",
   priceMode: "market",
   positionSizeMode: "usdt",
+  positionSizeCurrency: "usdt",
   positionSize: "",
   entryPrice: "",
   riskAmount: "",
@@ -50,6 +52,27 @@ let tokenCache = {
   lastFetch: 0,
   isLoading: false
 };
+
+// Currency conversion constant (single source of truth)
+const USDT_TO_INR = 96;
+
+// Helper function to convert USDT to INR
+function convertToINR(usdtValue) {
+  return usdtValue * USDT_TO_INR;
+}
+
+// Helper function to convert INR to USDT
+function convertToUSDT(inrValue) {
+  return inrValue / USDT_TO_INR;
+}
+
+// Helper function to format currency display (USDT with INR equivalent)
+function formatCurrencyDisplay(usdtValue) {
+  const formattedUsdt = formatPrice(usdtValue);
+  const inrValue = convertToINR(usdtValue);
+  const formattedInr = Math.floor(inrValue).toLocaleString('en-IN');
+  return '$' + formattedUsdt + ' (₹' + formattedInr + ')';
+}
 
 // Format numbers with proper decimal places for very small numbers
 function formatPrice(num) {
@@ -333,6 +356,11 @@ function renderRiskCalculator() {
         ' In ' + riskState.token + ' Units' +
       '</label>' +
     '</div>' +
+    (riskState.positionSizeMode === "usdt" ? 
+      '<div class="currency-toggle">' +
+        '<button id="riskPositionSizeUsdtBtn" class="currency-btn active">USDT</button>' +
+        '<button id="riskPositionSizeInrBtn" class="currency-btn">INR</button>' +
+      '</div>' : '') +
     '<input id="riskPositionSize" type="number" step="any" value="' + (riskState.positionSize || "") + '" placeholder="Enter position size" />' +
     '<hr />' +
     '<div id="riskResult"></div>';
@@ -348,6 +376,24 @@ function updateRiskSideUI() {
   if (longBtn && shortBtn) {
     longBtn.classList.toggle("active", riskState.side === "long");
     shortBtn.classList.toggle("active", riskState.side === "short");
+  }
+}
+
+function updateRiskCurrencyToggle() {
+  const usdtBtn = document.getElementById("riskPositionSizeUsdtBtn");
+  const inrBtn = document.getElementById("riskPositionSizeInrBtn");
+  const positionSizeInput = document.getElementById("riskPositionSize");
+
+  if (usdtBtn && inrBtn && positionSizeInput) {
+    if (riskState.positionSizeCurrency === "usdt") {
+      usdtBtn.classList.add("active");
+      inrBtn.classList.remove("active");
+      positionSizeInput.placeholder = "Enter position size in USDT";
+    } else {
+      usdtBtn.classList.remove("active");
+      inrBtn.classList.add("active");
+      positionSizeInput.placeholder = "Enter position size in INR";
+    }
   }
 }
 
@@ -383,7 +429,30 @@ function bindRiskEvents() {
 
   if (positionSizeInput) {
     positionSizeInput.addEventListener("input", function (e) {
-      riskState.positionSize = e.target.value;
+      const inputValue = Number(e.target.value);
+      if (riskState.positionSizeCurrency === "inr") {
+        riskState.positionSize = convertToUSDT(inputValue);
+      } else {
+        riskState.positionSize = inputValue;
+      }
+      calculateRisk();
+    });
+  }
+
+  // Currency toggle for position size
+  const usdtBtn = document.getElementById("riskPositionSizeUsdtBtn");
+  const inrBtn = document.getElementById("riskPositionSizeInrBtn");
+
+  if (usdtBtn && inrBtn) {
+    usdtBtn.addEventListener("click", function () {
+      riskState.positionSizeCurrency = "usdt";
+      updateRiskCurrencyToggle();
+      calculateRisk();
+    });
+
+    inrBtn.addEventListener("click", function () {
+      riskState.positionSizeCurrency = "inr";
+      updateRiskCurrencyToggle();
       calculateRisk();
     });
   }
@@ -514,6 +583,11 @@ function renderStopLossCalculator() {
         ' In ' + stopLossState.token + ' Units' +
       '</label>' +
     '</div>' +
+    (stopLossState.positionSizeMode === "usdt" ? 
+      '<div class="currency-toggle">' +
+        '<button id="stopLossPositionSizeUsdtBtn" class="currency-btn active">USDT</button>' +
+        '<button id="stopLossPositionSizeInrBtn" class="currency-btn">INR</button>' +
+      '</div>' : '') +
     '<input id="stopLossPositionSize" type="number" step="any" value="' + (stopLossState.positionSize || "") + '" placeholder="Enter position size" />' +
     '<hr />' +
     '<div id="stopLossResult"></div>';
@@ -529,6 +603,24 @@ function updateStopLossSideUI() {
   if (longBtn && shortBtn) {
     longBtn.classList.toggle("active", stopLossState.side === "long");
     shortBtn.classList.toggle("active", stopLossState.side === "short");
+  }
+}
+
+function updateStopLossCurrencyToggle() {
+  const usdtBtn = document.getElementById("stopLossPositionSizeUsdtBtn");
+  const inrBtn = document.getElementById("stopLossPositionSizeInrBtn");
+  const positionSizeInput = document.getElementById("stopLossPositionSize");
+
+  if (usdtBtn && inrBtn && positionSizeInput) {
+    if (stopLossState.positionSizeCurrency === "usdt") {
+      usdtBtn.classList.add("active");
+      inrBtn.classList.remove("active");
+      positionSizeInput.placeholder = "Enter position size in USDT";
+    } else {
+      usdtBtn.classList.remove("active");
+      inrBtn.classList.add("active");
+      positionSizeInput.placeholder = "Enter position size in INR";
+    }
   }
 }
 
@@ -564,7 +656,30 @@ function bindStopLossEvents() {
 
   if (positionSizeInput) {
     positionSizeInput.addEventListener("input", function (e) {
-      stopLossState.positionSize = e.target.value;
+      const inputValue = Number(e.target.value);
+      if (stopLossState.positionSizeCurrency === "inr") {
+        stopLossState.positionSize = convertToUSDT(inputValue);
+      } else {
+        stopLossState.positionSize = inputValue;
+      }
+      calculateStopLoss();
+    });
+  }
+
+  // Currency toggle for position size
+  const usdtBtn = document.getElementById("stopLossPositionSizeUsdtBtn");
+  const inrBtn = document.getElementById("stopLossPositionSizeInrBtn");
+
+  if (usdtBtn && inrBtn) {
+    usdtBtn.addEventListener("click", function () {
+      stopLossState.positionSizeCurrency = "usdt";
+      updateStopLossCurrencyToggle();
+      calculateStopLoss();
+    });
+
+    inrBtn.addEventListener("click", function () {
+      stopLossState.positionSizeCurrency = "inr";
+      updateStopLossCurrencyToggle();
       calculateStopLoss();
     });
   }
@@ -704,11 +819,11 @@ function calculateStopLoss() {
   if (stopLossState.positionSizeMode === "usdt") {
     resultHtml += '<p><strong>Token Units:</strong> ' + formatPrice(units) + ' ' + stopLossState.token + '</p>';
   } else {
-    resultHtml += '<p><strong>Notional Value:</strong> $' + formatPrice(notionalValue) + '</p>';
+    resultHtml += '<p><strong>Notional Value:</strong> ' + formatCurrencyDisplay(notionalValue) + '</p>';
   }
   
   resultHtml +=
-    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
+    '<p><strong>Risk per Unit:</strong> ' + formatCurrencyDisplay(riskPerUnit) + '</p>';
 
   if (stopLossState.priceSource) {
     resultHtml +=
@@ -834,9 +949,9 @@ function calculateRisk() {
     totalRisk = units * riskPerUnit;
     
     resultHtml +=
-      '<p class="result-value">$' + formatPrice(totalRisk) + '</p>' +
+      '<p class="result-value">' + formatCurrencyDisplay(totalRisk) + '</p>' +
       '<p><strong>Token Units:</strong> ' + formatPrice(units) + ' ' + riskState.token + '</p>' +
-      '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
+      '<p><strong>Risk per Unit:</strong> ' + formatCurrencyDisplay(riskPerUnit) + '</p>';
   } else {
     // Position size is in units
     // Calculate notional value
@@ -844,9 +959,9 @@ function calculateRisk() {
     totalRisk = positionSize * riskPerUnit;
     
     resultHtml +=
-      '<p class="result-value">$' + formatPrice(totalRisk) + '</p>' +
-      '<p><strong>Notional Value:</strong> $' + formatPrice(notionalValue) + '</p>' +
-      '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
+      '<p class="result-value">' + formatCurrencyDisplay(totalRisk) + '</p>' +
+      '<p><strong>Notional Value:</strong> ' + formatCurrencyDisplay(notionalValue) + '</p>' +
+      '<p><strong>Risk per Unit:</strong> ' + formatCurrencyDisplay(riskPerUnit) + '</p>';
   }
 
   if (riskState.priceSource) {
@@ -967,8 +1082,8 @@ function calculate() {
   let resultHtml =
     '<h3>Position Size</h3>' +
     '<p class="result-value">' + formatPrice(size) + ' ' + state.token + '</p>' +
-    '<p><strong>Notional Value:</strong> $' + formatPrice(notional) + '</p>' +
-    '<p><strong>Risk per Unit:</strong> $' + formatPrice(riskPerUnit) + '</p>';
+    '<p><strong>Notional Value:</strong> ' + formatCurrencyDisplay(notional) + '</p>' +
+    '<p><strong>Risk per Unit:</strong> ' + formatCurrencyDisplay(riskPerUnit) + '</p>';
 
   if (state.priceSource) {
     resultHtml +=

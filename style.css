@@ -224,6 +224,37 @@ input:disabled {
   cursor: pointer;
 }
 
+.currency-toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.currency-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  background: white;
+  color: #666;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.currency-btn:hover {
+  background: #f9f9f9;
+  border-color: #2f6fed;
+}
+
+.currency-btn.active {
+  background: #2f6fed;
+  color: white;
+  border-color: #2f6fed;
+}
+
 hr {
   margin: 24px 0;
   border: none;
