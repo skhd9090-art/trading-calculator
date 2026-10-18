@@ -14,7 +14,10 @@
 
   <div id="app">
     <header>
-      <h1>Trading Calculator</h1>
+      <div class="header-top-row">
+        <h1>Trading Calculator</h1>
+        <a href="./beta/" class="beta-switch-badge">🚀 Try Beta</a>
+      </div>
       <nav>
         <button class="tab active" data-tab="position">Position Size</button>
         <button class="tab" data-tab="risk">Risk</button>
@@ -31,9 +34,11 @@
   <script>
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('Service Worker registered'))
-        .catch((err) => console.log('Service Worker registration failed:', err));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('Service Worker registered'))
+          .catch((err) => console.log('Service Worker registration note:', err));
+      });
     }
   </script>
 </body>

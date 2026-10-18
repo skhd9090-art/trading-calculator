@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Beta Multi-Entry Crypto Trading Calculator with Fill Simulator & Groq AI Signal Parser" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="apple-touch-icon" href="../icon-192.svg" />
+  <title>Beta Trading Calculator | Multi-Entry & AI Parser</title>
+  <script>
+    // Clear out any old legacy caches to prevent stale script serving
+    if ('caches' in window) {
+      caches.keys().then(keys => {
+        keys.forEach(k => {
+          if (k !== 'trading-calculator-v5') {
+            caches.delete(k);
+          }
+        });
+      });
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        for (let r of regs) r.update();
+      });
+    }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./src/main.jsx"></script>
+</body>
+</html>

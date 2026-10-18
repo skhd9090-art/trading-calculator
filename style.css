@@ -26,8 +26,34 @@ header {
 
 header h1 {
   font-size: 20px;
-  margin-bottom: 16px;
   font-weight: 600;
+}
+
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.beta-switch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transition: all 0.2s;
+}
+
+.beta-switch-badge:hover {
+  background: white;
+  color: #2f6fed;
 }
 
 nav {
