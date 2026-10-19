@@ -6,16 +6,31 @@ import TakeProfit from './components/TakeProfit.jsx';
 import SignalParserModal from './components/SignalParserModal.jsx';
 import SetupsModal from './components/SetupsModal.jsx';
 import { calculatePosition, validateTrade } from './core/calculator-core.js';
-import { loadDraft, saveDraft, exportSetupToFile, INITIAL_TRADE, clone } from './services/storage.js';
+import {
+  loadDraft,
+  saveDraft,
+  exportSetupToFile,
+  INITIAL_TRADE,
+  clone,
+  getSavedSetups,
+  saveNamedSetup,
+  mergeSetupIntoTrade
+} from './services/storage.js';
 
 export default function App() {
   const [trade, setTrade] = useState(() => loadDraft());
   const [livePrice, setLivePrice] = useState(null);
   const [saveStatus, setSaveStatus] = useState('Saved locally');
+  const [savedSetups, setSavedSetups] = useState(() => getSavedSetups());
   const [isParserOpen, setIsParserOpen] = useState(false);
   const [isSetupsOpen, setIsSetupsOpen] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [notification, setNotification] = useState('');
+
+  const refreshSetups = () => {
+    setSavedSetups(getSavedSetups());
+  };
+
 
   // Debounced autosave
   useEffect(() => {
@@ -125,9 +140,35 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLoadSetup = loadedTrade => {
-    setTrade(clone(loadedTrade));
-    setNotification(`Loaded trade setup for ${loadedTrade.symbol || 'setup'}!`);
+  const handleLoadSetup = loadedSetup => {
+    const nextTrade = mergeSetupIntoTrade(trade, loadedSetup);
+    setTrade(nextTrade);
+    const scopeLabel = loadedSetup.scope === 'position' ? 'position setup' : 'full trade setup';
+    const setupName = loadedSetup.name || loadedSetup.trade?.symbol || 'setup';
+    setNotification(`Loaded ${scopeLabel} "${setupName}"!`);
+    refreshSetups();
+  };
+
+  const handleLoadSetupById = id => {
+    const found = savedSetups.find(s => s.id === id);
+    if (found) {
+      handleLoadSetup(found);
+    }
+  };
+
+  const handleQuickSave = (scope = 'position') => {
+    const defaultName = `${trade.symbol || 'Trade'} ${trade.direction.toUpperCase()} (${scope === 'position' ? `${trade.entries.length} entries` : 'Full Plan'})`;
+    const promptMsg = scope === 'position'
+      ? 'Enter a name to save this position setup (coin, leverage, sizing & entries) locally in your browser:'
+      : 'Enter a name to save this full setup (including Take-Profit targets) locally in your browser:';
+    const entered = window.prompt(promptMsg, defaultName);
+    if (!entered || !entered.trim()) return;
+
+    const saved = saveNamedSetup(entered.trim(), trade, scope);
+    if (saved) {
+      refreshSetups();
+      setNotification(`Saved ${scope === 'position' ? 'position setup' : 'full setup'} "${saved.name}" to browser storage!`);
+    }
   };
 
   const handleReset = () => {
@@ -163,9 +204,12 @@ export default function App() {
             <button
               type="button"
               className="btn-action-outline"
-              onClick={() => setIsSetupsOpen(true)}
+              onClick={() => {
+                refreshSetups();
+                setIsSetupsOpen(true);
+              }}
             >
-              📁 Setups
+              📁 Setups ({savedSetups.length})
             </button>
             <a href="../" className="btn-action-nav" title="Switch to Classic Single-Entry Calculator">
               ← Classic App
@@ -186,6 +230,13 @@ export default function App() {
           trade={trade}
           onChange={setTrade}
           onPriceFetched={handlePriceFetched}
+          savedSetups={savedSetups}
+          onLoadSetupById={handleLoadSetupById}
+          onQuickSave={handleQuickSave}
+          onOpenSetupsModal={() => {
+            refreshSetups();
+            setIsSetupsOpen(true);
+          }}
         />
 
         <EntryOrders
@@ -272,7 +323,10 @@ export default function App() {
 
       <SetupsModal
         isOpen={isSetupsOpen}
-        onClose={() => setIsSetupsOpen(false)}
+        onClose={() => {
+          setIsSetupsOpen(false);
+          refreshSetups();
+        }}
         currentTrade={trade}
         onLoadSetup={handleLoadSetup}
       />

@@ -16,6 +16,8 @@ export default function SetupsModal({
 }) {
   const [setups, setSetups] = useState([]);
   const [newSetupName, setNewSetupName] = useState('');
+  const [saveScope, setSaveScope] = useState('position'); // 'position' | 'full'
+  const [filterScope, setFilterScope] = useState('all'); // 'all' | 'position' | 'full'
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
 
@@ -26,18 +28,19 @@ export default function SetupsModal({
   useEffect(() => {
     if (isOpen) {
       refreshList();
+      const scopeLabel = saveScope === 'position' ? 'Position' : 'Full';
       setNewSetupName(
-        `${currentTrade.symbol || 'Trade'} ${currentTrade.direction.toUpperCase()} (${new Date().toLocaleDateString()})`
+        `${currentTrade.symbol || 'Trade'} ${currentTrade.direction.toUpperCase()} (${scopeLabel})`
       );
     }
-  }, [isOpen, currentTrade]);
+  }, [isOpen, currentTrade, saveScope]);
 
   if (!isOpen) return null;
 
   const handleSaveCurrent = e => {
     e.preventDefault();
     if (!newSetupName.trim()) return;
-    saveNamedSetup(newSetupName, currentTrade);
+    saveNamedSetup(newSetupName, currentTrade, saveScope);
     setNewSetupName('');
     refreshList();
   };
@@ -68,12 +71,12 @@ export default function SetupsModal({
   };
 
   const handleLoad = setup => {
-    onLoadSetup(setup.trade);
+    onLoadSetup(setup);
     onClose();
   };
 
   const handleExport = setup => {
-    exportSetupToFile(setup.trade, setup.name);
+    exportSetupToFile(setup.trade, setup.name, setup.scope || 'position');
   };
 
   const handleImportFile = e => {
@@ -87,10 +90,11 @@ export default function SetupsModal({
         if (!tradeData || !Array.isArray(tradeData.entries)) {
           throw new Error('Invalid setup file format');
         }
-        const importedName = `Imported: ${tradeData.symbol || 'Trade'} (${new Date().toLocaleDateString()})`;
-        saveNamedSetup(importedName, tradeData);
+        const importedScope = payload.scope || (tradeData.targets ? 'full' : 'position');
+        const importedName = `Imported: ${tradeData.symbol || 'Trade'} (${importedScope === 'position' ? 'Position' : 'Full'})`;
+        const saved = saveNamedSetup(importedName, tradeData, importedScope);
         refreshList();
-        onLoadSetup(tradeData);
+        onLoadSetup(saved);
         onClose();
       } catch (err) {
         alert('Could not import setup: ' + err.message);
@@ -100,19 +104,55 @@ export default function SetupsModal({
     reader.readAsText(file);
   };
 
+  const filteredSetups = setups.filter(s => {
+    if (filterScope === 'position') return s.scope === 'position';
+    if (filterScope === 'full') return s.scope === 'full';
+    return true;
+  });
+
+  const positionCount = setups.filter(s => s.scope === 'position').length;
+  const fullCount = setups.filter(s => s.scope === 'full').length;
+
   return (
     <div className="modal-backdrop">
       <div className="modal-card setups-modal-card">
         <div className="modal-header">
           <div className="modal-title-group">
-            <h3>📁 Saved Trade Setups</h3>
-            <span className="badge-pill">{setups.length} Saved</span>
+            <h3>📁 Web-Side Trade Setups</h3>
+            <span className="badge-pill">{setups.length} Saved in Browser</span>
           </div>
           <button type="button" className="btn-close" onClick={onClose}>✕</button>
         </div>
 
+        <p className="modal-desc-subtle">
+          🌐 <strong>Web-side storage:</strong> Setups are saved directly in your browser's localStorage. Private, instant, and available offline.
+        </p>
+
         <form onSubmit={handleSaveCurrent} className="save-current-form">
-          <label className="field-label">Save Current Calculator Setup</label>
+          <div className="save-form-header">
+            <label className="field-label">Save Current Calculator Setup</label>
+            <div className="scope-radio-toggle">
+              <label className={`scope-pill ${saveScope === 'position' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="saveScope"
+                  checked={saveScope === 'position'}
+                  onChange={() => setSaveScope('position')}
+                />
+                <span>🎯 Position Only</span>
+              </label>
+              <label className={`scope-pill ${saveScope === 'full' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="saveScope"
+                  checked={saveScope === 'full'}
+                  onChange={() => setSaveScope('full')}
+                />
+                <span>📋 Full (+ TPs)</span>
+              </label>
+            </div>
+          </div>
+
           <div className="save-input-row">
             <input
               type="text"
@@ -125,22 +165,52 @@ export default function SetupsModal({
               💾 Save Setup
             </button>
           </div>
+          <small className="save-hint">
+            {saveScope === 'position'
+              ? '🎯 Position Only saves coin, leverage, direction, sizing & entries. Take profits will remain untouched when loaded.'
+              : '📋 Full Setup saves entire trade configuration including Take-Profit targets and exit plan.'}
+          </small>
         </form>
 
+        <div className="setups-filter-tabs">
+          <button
+            type="button"
+            className={`tab-btn ${filterScope === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterScope('all')}
+          >
+            All ({setups.length})
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${filterScope === 'position' ? 'active' : ''}`}
+            onClick={() => setFilterScope('position')}
+          >
+            🎯 Position Only ({positionCount})
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${filterScope === 'full' ? 'active' : ''}`}
+            onClick={() => setFilterScope('full')}
+          >
+            📋 Full Setup ({fullCount})
+          </button>
+        </div>
+
         <div className="setups-list-container">
-          {setups.length === 0 ? (
+          {filteredSetups.length === 0 ? (
             <div className="empty-setups-state">
-              <p>No saved setups yet.</p>
-              <small>Save your current trade above or import an existing setup JSON.</small>
+              <p>No {filterScope !== 'all' ? filterScope : ''} setups saved yet.</p>
+              <small>Use the form above to save your current setup to your browser.</small>
             </div>
           ) : (
             <div className="setups-cards-list">
-              {setups.map(s => {
+              {filteredSetups.map(s => {
                 const isEditing = editingId === s.id;
                 const token = s.trade?.symbol || 'Trade';
                 const dir = (s.trade?.direction || 'long').toUpperCase();
                 const entriesCount = s.trade?.entries?.length || 0;
                 const risk = s.trade?.riskBudget ? `$${s.trade.riskBudget} risk` : '';
+                const isPositionOnly = s.scope === 'position';
 
                 return (
                   <div key={s.id} className="setup-item-card">
@@ -170,7 +240,12 @@ export default function SetupsModal({
                         </div>
                       ) : (
                         <div>
-                          <strong className="setup-title">{s.name}</strong>
+                          <div className="setup-title-row">
+                            <strong className="setup-title">{s.name}</strong>
+                            <span className={`badge-scope ${isPositionOnly ? 'badge-position' : 'badge-full'}`}>
+                              {isPositionOnly ? '🎯 Position Only' : '📋 Full Setup'}
+                            </span>
+                          </div>
                           <div className="setup-meta-line">
                             <span className={`dir-badge ${dir === 'LONG' ? 'badge-long' : 'badge-short'}`}>
                               {dir}
@@ -194,6 +269,7 @@ export default function SetupsModal({
                         type="button"
                         className="btn-sm btn-primary"
                         onClick={() => handleLoad(s)}
+                        title={isPositionOnly ? 'Load position parameters & entries (keeps current TPs)' : 'Load full trade setup'}
                       >
                         Load
                       </button>
@@ -216,7 +292,7 @@ export default function SetupsModal({
                       <button
                         type="button"
                         className="btn-sm btn-icon"
-                        title="Export JSON"
+                        title="Export JSON backup"
                         onClick={() => handleExport(s)}
                       >
                         📤

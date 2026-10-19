@@ -201,3 +201,18 @@ export function calculatePartialExitPnl({ targetRows }) {
   if (!exitsValid) return null;
   return targetRows.reduce((s, t) => s + (t.pnl ?? 0) * (t.exitPercent / 100), 0);
 }
+
+export function distributeEqualExits(targets) {
+  if (!Array.isArray(targets) || targets.length === 0) return [];
+  const count = targets.length;
+  const base = Math.floor((100 / count) * 100) / 100;
+  const remainder = Number((100 - base * count).toFixed(2));
+  return targets.map((t, idx) => {
+    const alloc = idx === count - 1 ? Number((base + remainder).toFixed(2)) : base;
+    return {
+      ...t,
+      exit: alloc.toString()
+    };
+  });
+}
+

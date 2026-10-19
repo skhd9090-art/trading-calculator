@@ -8,7 +8,8 @@ import {
   calculatePosition,
   calculateScenario,
   calculateTargetPnl,
-  calculatePartialExitPnl
+  calculatePartialExitPnl,
+  distributeEqualExits
 } from '../beta-src/src/core/calculator-core.js';
 
 test('expandRange: includes endpoints when count specified', () => {
@@ -210,3 +211,22 @@ test('calculatePartialExitPnl: calculates weighted exit gross PnL', () => {
   ];
   assert.equal(calculatePartialExitPnl({ targetRows: invalidRows }), null);
 });
+
+test('distributeEqualExits: distributes allocations equally totaling 100%', () => {
+  const t1 = [{ id: 1, price: '100', exit: '' }];
+  assert.deepEqual(distributeEqualExits(t1).map(t => Number(t.exit)), [100]);
+
+  const t2 = [{ id: 1, exit: '' }, { id: 2, exit: '' }];
+  assert.deepEqual(distributeEqualExits(t2).map(t => Number(t.exit)), [50, 50]);
+
+  const t3 = [{ id: 1, exit: '' }, { id: 2, exit: '' }, { id: 3, exit: '' }];
+  const res3 = distributeEqualExits(t3).map(t => Number(t.exit));
+  assert.deepEqual(res3, [33.33, 33.33, 33.34]);
+  assert.equal(res3.reduce((a, b) => a + b, 0), 100);
+
+  const t4 = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
+  const res4 = distributeEqualExits(t4).map(t => Number(t.exit));
+  assert.deepEqual(res4, [25, 25, 25, 25]);
+  assert.equal(res4.reduce((a, b) => a + b, 0), 100);
+});
+

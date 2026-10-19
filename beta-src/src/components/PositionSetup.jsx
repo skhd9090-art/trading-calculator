@@ -1,14 +1,81 @@
 import React from 'react';
 import TokenSelector from './TokenSelector.jsx';
 
-export default function PositionSetup({ trade, onChange, onPriceFetched }) {
+export default function PositionSetup({
+  trade,
+  onChange,
+  onPriceFetched,
+  savedSetups = [],
+  onLoadSetupById,
+  onQuickSave,
+  onOpenSetupsModal
+}) {
   const update = (key, value) => onChange({ ...trade, [key]: value });
 
   return (
     <section className="calc-panel">
-      <div className="panel-header">
-        <h2>1. Position Setup</h2>
+      <div className="panel-header-row">
+        <div>
+          <h2>1. Position Setup</h2>
+          <p className="panel-sub">Configure token, leverage, direction and sizing method.</p>
+        </div>
+        <div className="panel-header-actions">
+          <button
+            type="button"
+            className="btn-quick-setup"
+            onClick={() => onQuickSave('position')}
+            title="Save only this position setup (coin, leverage, sizing & entries) to browser storage"
+          >
+            💾 Save Position Only
+          </button>
+          <button
+            type="button"
+            className="btn-quick-setup btn-quick-setup-secondary"
+            onClick={() => onQuickSave('full')}
+            title="Save complete trade setup including take-profit targets to browser storage"
+          >
+            📋 Save Full Setup
+          </button>
+        </div>
       </div>
+
+      <div className="quick-setups-banner">
+        <div className="quick-setups-left">
+          <span className="quick-setups-title">⚡ Web-Side Setups:</span>
+          <select
+            className="select-base quick-setup-select"
+            value=""
+            onChange={e => {
+              if (e.target.value) {
+                onLoadSetupById(e.target.value);
+                e.target.value = '';
+              }
+            }}
+          >
+            <option value="" disabled>
+              {savedSetups.length > 0
+                ? `📂 Quick Load Setup (${savedSetups.length} saved in browser)...`
+                : '📂 No saved setups yet (click "Save Position Only" to store)'}
+            </option>
+            {savedSetups.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.scope === 'position' ? '🎯 [Position Only] ' : '📋 [Full] '}
+                {s.name} ({s.trade?.symbol || 'Trade'} {s.trade?.direction?.toUpperCase()})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="quick-setups-right">
+          <button
+            type="button"
+            className="btn-link-action"
+            onClick={onOpenSetupsModal}
+          >
+            Manage Setups ({savedSetups.length}) →
+          </button>
+        </div>
+      </div>
+
 
       <div className="two-col-grid">
         <TokenSelector
