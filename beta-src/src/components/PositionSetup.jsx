@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TokenSelector from './TokenSelector.jsx';
 
 export default function PositionSetup({
@@ -10,10 +10,11 @@ export default function PositionSetup({
   onQuickSave,
   onOpenSetupsModal
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const update = (key, value) => onChange({ ...trade, [key]: value });
 
   return (
-    <section className="calc-panel">
+    <section className="calc-panel position-setup-panel">
       <div className="panel-header-row">
         <div>
           <h2>1. Position Setup</h2>
@@ -41,7 +42,7 @@ export default function PositionSetup({
 
       <div className="quick-setups-banner">
         <div className="quick-setups-left">
-          <span className="quick-setups-title">⚡ Web-Side Setups:</span>
+          <span className="quick-setups-title">📂 Setups:</span>
           <select
             className="select-base quick-setup-select"
             value=""
@@ -54,12 +55,12 @@ export default function PositionSetup({
           >
             <option value="" disabled>
               {savedSetups.length > 0
-                ? `📂 Quick Load Setup (${savedSetups.length} saved in browser)...`
-                : '📂 No saved setups yet (click "Save Position Only" to store)'}
+                ? `Saved Setups (${savedSetups.length})...`
+                : 'No saved setups yet'}
             </option>
             {savedSetups.map(s => (
               <option key={s.id} value={s.id}>
-                {s.scope === 'position' ? '🎯 [Position Only] ' : '📋 [Full] '}
+                {s.scope === 'position' ? '🎯 [Pos] ' : '📋 [Full] '}
                 {s.name} ({s.trade?.symbol || 'Trade'} {s.trade?.direction?.toUpperCase()})
               </option>
             ))}
@@ -71,35 +72,38 @@ export default function PositionSetup({
             className="btn-link-action"
             onClick={onOpenSetupsModal}
           >
-            Manage Setups ({savedSetups.length}) →
+            Manage ({savedSetups.length}) →
           </button>
         </div>
       </div>
 
-
-      <div className="two-col-grid">
-        <TokenSelector
-          symbol={trade.symbol}
-          onSelectSymbol={val => update('symbol', val)}
-          onPriceFetched={onPriceFetched}
-        />
-        <div className="field-group">
-          <label className="field-label">Leverage (×)</label>
-          <input
-            type="number"
-            min="1"
-            max="125"
-            step="any"
-            className="input-base"
-            value={trade.leverage}
-            onChange={e => update('leverage', e.target.value)}
+      <div className="setup-compact-grid">
+        <div className="setup-token-col">
+          <TokenSelector
+            symbol={trade.symbol}
+            onSelectSymbol={val => update('symbol', val)}
+            onPriceFetched={onPriceFetched}
           />
+        </div>
+        <div className="field-group setup-leverage-col">
+          <label className="field-label">Leverage</label>
+          <div className="leverage-input-wrapper">
+            <input
+              type="number"
+              min="1"
+              max="125"
+              step="any"
+              className="input-base"
+              value={trade.leverage}
+              onChange={e => update('leverage', e.target.value)}
+            />
+            <span className="leverage-unit">×</span>
+          </div>
         </div>
       </div>
 
-      <div className="field-group">
-        <label className="field-label">Position Direction</label>
-        <div className="segmented-control">
+      <div className="direction-save-row">
+        <div className="segmented-control flex-1">
           <button
             type="button"
             className={`seg-btn ${trade.direction === 'long' ? 'active long' : ''}`}
@@ -115,60 +119,20 @@ export default function PositionSetup({
             ▼ Short
           </button>
         </div>
+        <button
+          type="button"
+          className="btn-quick-save-pill mobile-only-inline"
+          onClick={() => onQuickSave('position')}
+          title="Save this position setup"
+        >
+          💾 Save
+        </button>
       </div>
 
-      <div className="field-group">
-        <label className="field-label">Allocation Basis</label>
-        <div className="radio-pill-group">
-          <label className={`radio-pill ${trade.allocationBasis === 'notional' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="allocationBasis"
-              checked={trade.allocationBasis === 'notional'}
-              onChange={() => update('allocationBasis', 'notional')}
-            />
-            <span>USDT Notional (%)</span>
-          </label>
-          <label className={`radio-pill ${trade.allocationBasis === 'quantity' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="allocationBasis"
-              checked={trade.allocationBasis === 'quantity'}
-              onChange={() => update('allocationBasis', 'quantity')}
-            />
-            <span>Token Quantity (%)</span>
-          </label>
-        </div>
-      </div>
-
-      <div className="field-group">
-        <label className="field-label">Position Sizing Method</label>
-        <div className="radio-pill-group">
-          <label className={`radio-pill ${trade.sizingMethod === 'risk' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="sizingMethod"
-              checked={trade.sizingMethod === 'risk'}
-              onChange={() => update('sizingMethod', 'risk')}
-            />
-            <span>Calculate from Risk Budget</span>
-          </label>
-          <label className={`radio-pill ${trade.sizingMethod === 'fixed' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="sizingMethod"
-              checked={trade.sizingMethod === 'fixed'}
-              onChange={() => update('sizingMethod', 'fixed')}
-            />
-            <span>Specify Total Position Size</span>
-          </label>
-        </div>
-      </div>
-
-      <div className="two-col-grid">
+      <div className="two-col-grid risk-stop-row">
         {trade.sizingMethod === 'risk' ? (
           <div className="field-group">
-            <label className="field-label">Total Risk Budget (USDT)</label>
+            <label className="field-label">Risk Budget (USDT)</label>
             <input
               type="number"
               min="0"
@@ -182,7 +146,7 @@ export default function PositionSetup({
         ) : (
           <div className="field-group">
             <label className="field-label">
-              {trade.allocationBasis === 'notional' ? 'Total Position Notional (USDT)' : 'Total Token Quantity (Coins)'}
+              {trade.allocationBasis === 'notional' ? 'Total Notional (USDT)' : 'Total Quantity (Coins)'}
             </label>
             <input
               type="number"
@@ -207,6 +171,67 @@ export default function PositionSetup({
             value={trade.stopLoss}
             onChange={e => update('stopLoss', e.target.value)}
           />
+        </div>
+      </div>
+
+      <div className="advanced-sizing-section">
+        <button
+          type="button"
+          className="btn-toggle-advanced mobile-only-block"
+          onClick={() => setShowAdvanced(prev => !prev)}
+        >
+          <span>⚙️ Advanced Sizing ({trade.allocationBasis === 'notional' ? 'USDT %' : 'Coin %'} • {trade.sizingMethod === 'risk' ? 'Risk Budget' : 'Fixed'})</span>
+          <span>{showAdvanced ? '▲' : '▼'}</span>
+        </button>
+
+        <div className={`advanced-sizing-content ${showAdvanced ? 'is-open' : ''}`}>
+          <div className="field-group">
+            <label className="field-label">Allocation Basis</label>
+            <div className="radio-pill-group">
+              <label className={`radio-pill ${trade.allocationBasis === 'notional' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="allocationBasis"
+                  checked={trade.allocationBasis === 'notional'}
+                  onChange={() => update('allocationBasis', 'notional')}
+                />
+                <span>USDT Notional (%)</span>
+              </label>
+              <label className={`radio-pill ${trade.allocationBasis === 'quantity' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="allocationBasis"
+                  checked={trade.allocationBasis === 'quantity'}
+                  onChange={() => update('allocationBasis', 'quantity')}
+                />
+                <span>Token Quantity (%)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">Position Sizing Method</label>
+            <div className="radio-pill-group">
+              <label className={`radio-pill ${trade.sizingMethod === 'risk' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="sizingMethod"
+                  checked={trade.sizingMethod === 'risk'}
+                  onChange={() => update('sizingMethod', 'risk')}
+                />
+                <span>Calculate from Risk Budget</span>
+              </label>
+              <label className={`radio-pill ${trade.sizingMethod === 'fixed' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="sizingMethod"
+                  checked={trade.sizingMethod === 'fixed'}
+                  onChange={() => update('sizingMethod', 'fixed')}
+                />
+                <span>Specify Total Position Size</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
     </section>

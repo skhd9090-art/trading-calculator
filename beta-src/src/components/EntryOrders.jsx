@@ -79,6 +79,14 @@ export default function EntryOrders({
           >
             ⚡ Range
           </button>
+          <button
+            type="button"
+            className="btn-text-action btn-text-primary"
+            title="Add entry level"
+            onClick={addEntry}
+          >
+            ＋ Add
+          </button>
         </div>
       </div>
 
@@ -90,7 +98,6 @@ export default function EntryOrders({
             <div key={entry.id} className={`entry-card ${entry.filled ? 'is-filled' : ''}`}>
               <div className="entry-card-header">
                 <div className="entry-tag-group">
-                  <span className="entry-badge">Entry {index + 1}</span>
                   <label className="checkbox-label filled-toggle">
                     <input
                       type="checkbox"
@@ -99,6 +106,10 @@ export default function EntryOrders({
                     />
                     <span>Filled</span>
                   </label>
+                  <span className="entry-badge">E{index + 1}</span>
+                  {calc && (
+                    <span className="entry-header-risk text-danger">Risk: ${Number(calc.stopLossRisk).toFixed(2)}</span>
+                  )}
                 </div>
 
                 <button

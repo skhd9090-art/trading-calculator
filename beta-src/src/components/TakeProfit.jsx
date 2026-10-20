@@ -113,6 +113,14 @@ export default function TakeProfit({ trade, planned, onChange }) {
         </div>
         <div className="panel-header-actions">
           <span className="badge-pill">{trade.targets.length} Targets</span>
+          <button
+            type="button"
+            className="btn-text-action btn-text-primary"
+            title="Add Take-Profit Target"
+            onClick={addTarget}
+          >
+            ＋ Add TP
+          </button>
         </div>
       </div>
 
@@ -138,7 +146,7 @@ export default function TakeProfit({ trade, planned, onChange }) {
               checked={trade.exitMode === 'full'}
               onChange={() => handleSwitchExitMode('full')}
             />
-            <span>Full-Position Exit per Target</span>
+            <span>Full-Position Exit</span>
           </label>
           <label className={`radio-pill ${trade.exitMode === 'partial' ? 'selected' : ''}`}>
             <input
@@ -147,7 +155,7 @@ export default function TakeProfit({ trade, planned, onChange }) {
               checked={trade.exitMode === 'partial'}
               onChange={() => handleSwitchExitMode('partial')}
             />
-            <span>Partial Exit Plan (Exits = 100%)</span>
+            <span>Partial Exit Plan (100%)</span>
           </label>
         </div>
       </div>
@@ -156,7 +164,14 @@ export default function TakeProfit({ trade, planned, onChange }) {
         {targetRows.map((target, idx) => (
           <div key={target.id} className="target-card">
             <div className="target-card-header">
-              <span className="target-badge">{target.label || `TP${idx + 1}`}</span>
+              <div className="target-header-left">
+                <span className="target-badge">{target.label || `TP${idx + 1}`}</span>
+                {trade.exitMode === 'partial' && target.stageRealizedPnl != null && (
+                  <span className="target-header-stage-gain text-success">
+                    +{`$${target.stageRealizedPnl.toFixed(2)}`} ({target.exitPercent || 0}%)
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 className="btn-remove-entry"
