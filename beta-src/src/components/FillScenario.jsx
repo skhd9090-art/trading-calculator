@@ -47,6 +47,29 @@ export default function FillScenario({ trade, planned, onChange }) {
         </button>
       </div>
 
+      <div className="scenario-mobile-summary-strip mobile-only-flex">
+        <div className="m-summary-cell">
+          <span className="m-summary-label">Active Size:</span>
+          <strong className="m-summary-val">
+            {scenarioResult.scenarioQty > 0
+              ? `${Number(scenarioResult.scenarioQty).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${trade.symbol}`
+              : '0 coins'}
+          </strong>
+        </div>
+        <div className="m-summary-cell">
+          <span className="m-summary-label">Notional:</span>
+          <strong className="m-summary-val">
+            ${Number(scenarioResult.scenarioNotional).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </strong>
+        </div>
+        <div className="m-summary-cell">
+          <span className="m-summary-label">Avg Entry:</span>
+          <strong className="m-summary-val">
+            {scenarioResult.averageEntry != null ? `$${formatSmartPrice(scenarioResult.averageEntry)}` : '—'}
+          </strong>
+        </div>
+      </div>
+
       <div className="metrics-summary-grid">
         <div className="metric-card">
           <span className="metric-label">Active Position Size</span>

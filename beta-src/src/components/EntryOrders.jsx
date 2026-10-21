@@ -180,7 +180,10 @@ export default function EntryOrders({
                 <div className="entry-metrics-footer">
                   <div className="entry-metric-item">
                     <span>Planned Coins:</span>
-                    <strong>{Number(calc.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })}</strong>
+                    <strong>
+                      {Number(calc.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                      {trade.symbol ? ` ${trade.symbol}` : ''}
+                    </strong>
                   </div>
                   <div className="entry-metric-item">
                     <span>Notional:</span>
@@ -188,7 +191,7 @@ export default function EntryOrders({
                   </div>
                   <div className="entry-metric-item">
                     <span>Stop Risk:</span>
-                    <strong>${Number(calc.stopLossRisk).toFixed(2)}</strong>
+                    <strong className="text-danger">${Number(calc.stopLossRisk).toFixed(2)}</strong>
                   </div>
                 </div>
               )}

@@ -1509,6 +1509,7 @@ body {
   .mobile-brand-title,
   .mobile-only-inline,
   .mobile-only-block,
+  .mobile-only-flex,
   .mobile-hybrid-nav,
   .mobile-sticky-hud,
   .mobile-step-nav {
@@ -1853,9 +1854,7 @@ body {
   }
 
   .entry-header-risk {
-    font-size: 10px;
-    font-weight: 700;
-    margin-left: 6px;
+    display: none !important; /* Displayed in compact metrics footer below */
   }
 
   .entry-grid {
@@ -1878,7 +1877,35 @@ body {
   }
 
   .entry-metrics-footer {
-    display: none !important; /* Kept in bottom Sticky HUD */
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 4px !important;
+    padding-top: 4px !important;
+    border-top: 1px dashed var(--border-color) !important;
+    font-size: 10px !important;
+  }
+
+  .entry-metric-item {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .entry-metric-item span {
+    font-size: 9px !important;
+    color: var(--text-muted) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2px !important;
+    line-height: 1 !important;
+  }
+
+  .entry-metric-item strong {
+    font-size: 11px !important;
+    color: var(--text-main) !important;
+    font-weight: 700 !important;
+    font-variant-numeric: tabular-nums !important;
   }
 
   .btn-add-entry {
@@ -1894,6 +1921,39 @@ body {
   .mobile-mode-tabs .panel-section-entries .scenario-segmented {
     margin-bottom: 0 !important;
     gap: 4px !important;
+  }
+
+  .scenario-mobile-summary-strip {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px !important;
+    margin-top: 5px !important;
+  }
+
+  .m-summary-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .m-summary-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    line-height: 1;
+  }
+
+  .m-summary-val {
+    font-size: 11px;
+    color: var(--text-main);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 
   .scenario-btn {
