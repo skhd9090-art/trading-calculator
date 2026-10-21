@@ -12,7 +12,17 @@ export default function FillScenario({ trade, planned, onChange }) {
     leverage: leverageNum
   });
 
-  const filledCount = trade.entries.filter(e => e.filled).length;
+  let filledCount = 0;
+  let totalCount = 0;
+  trade.entries.forEach(e => {
+    if (e.isLayered && Array.isArray(e.layers)) {
+      totalCount += e.layers.length;
+      filledCount += e.layers.filter(l => l.filled).length;
+    } else {
+      totalCount += 1;
+      if (e.filled) filledCount += 1;
+    }
+  });
 
   const updateScenario = mode => {
     onChange({ ...trade, scenario: mode });
@@ -26,7 +36,7 @@ export default function FillScenario({ trade, planned, onChange }) {
           <p className="panel-sub">Simulate position and risk outcomes based on which entries have filled.</p>
         </div>
         <span className="badge-pill">
-          {scenario === 'filled' ? `${filledCount} of ${trade.entries.length} filled` : `All ${trade.entries.length} entries`}
+          {scenario === 'filled' ? `${filledCount} of ${totalCount} filled` : `All ${totalCount} entries`}
         </span>
       </div>
 
@@ -43,7 +53,7 @@ export default function FillScenario({ trade, planned, onChange }) {
           className={`scenario-btn ${scenario === 'all' ? 'active' : ''}`}
           onClick={() => updateScenario('all')}
         >
-          Assume All Entries Fill ({trade.entries.length} Total)
+          Assume All Entries Fill ({totalCount} Total)
         </button>
       </div>
 

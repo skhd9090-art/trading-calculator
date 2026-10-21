@@ -62,13 +62,32 @@ export default function App() {
     }
   }, [notification]);
 
-  // Parse numeric values for validation & calculation
+  // Parse numeric values for validation & calculation, flattening layered entries if present
   const parsedEntries = useMemo(() => {
-    return trade.entries.map(e => ({
-      ...e,
-      price: e.price !== '' && Number.isFinite(Number(e.price)) ? Number(e.price) : null,
-      allocationPercent: e.allocation !== '' && Number.isFinite(Number(e.allocation)) ? Number(e.allocation) : null
-    }));
+    const list = [];
+    trade.entries.forEach(entry => {
+      if (entry.isLayered && Array.isArray(entry.layers) && entry.layers.length > 0) {
+        entry.layers.forEach((layer, layerIdx) => {
+          list.push({
+            ...layer,
+            parentId: entry.id,
+            isLayer: true,
+            layerIndex: layerIdx,
+            type: entry.type || 'limit',
+            price: layer.price !== '' && Number.isFinite(Number(layer.price)) ? Number(layer.price) : null,
+            allocationPercent: layer.allocation !== '' && Number.isFinite(Number(layer.allocation)) ? Number(layer.allocation) : null
+          });
+        });
+      } else {
+        list.push({
+          ...entry,
+          isLayer: false,
+          price: entry.price !== '' && Number.isFinite(Number(entry.price)) ? Number(entry.price) : null,
+          allocationPercent: entry.allocation !== '' && Number.isFinite(Number(entry.allocation)) ? Number(entry.allocation) : null
+        });
+      }
+    });
+    return list;
   }, [trade.entries]);
 
   const validation = useMemo(() => {
@@ -227,8 +246,20 @@ export default function App() {
     }
   };
 
-  const filledCount = trade.entries.filter(e => e.filled).length;
-  const totalEntriesCount = trade.entries.length;
+  const { filledCount, totalEntriesCount } = useMemo(() => {
+    let filled = 0;
+    let total = 0;
+    trade.entries.forEach(e => {
+      if (e.isLayered && Array.isArray(e.layers)) {
+        total += e.layers.length;
+        filled += e.layers.filter(l => l.filled).length;
+      } else {
+        total += 1;
+        if (e.filled) filled += 1;
+      }
+    });
+    return { filledCount: filled, totalEntriesCount: total };
+  }, [trade.entries]);
   const targetsCount = trade.targets.length;
 
   const handleTabSelect = tabKey => {

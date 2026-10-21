@@ -9,7 +9,8 @@ import {
   calculateScenario,
   calculateTargetPnl,
   calculatePartialExitPnl,
-  distributeEqualExits
+  distributeEqualExits,
+  createLayeredAllocations
 } from '../beta-src/src/core/calculator-core.js';
 
 test('expandRange: includes endpoints when count specified', () => {
@@ -228,5 +229,46 @@ test('distributeEqualExits: distributes allocations equally totaling 100%', () =
   const res4 = distributeEqualExits(t4).map(t => Number(t.exit));
   assert.deepEqual(res4, [25, 25, 25, 25]);
   assert.equal(res4.reduce((a, b) => a + b, 0), 100);
+});
+
+test('createLayeredAllocations: generates equal risk budget across layers', () => {
+  // Test user example: Long BTC, 84500 to 82250, 4 layers, parent 50% allocation, SL 80000
+  const layers = createLayeredAllocations({
+    startPrice: 84500,
+    endPrice: 82250,
+    count: 4,
+    parentAllocation: 50,
+    stopLoss: 80000,
+    direction: 'long',
+    allocationBasis: 'notional'
+  });
+
+  assert.equal(layers.length, 4);
+  assert.equal(Number(layers[0].price), 84500);
+  assert.equal(Number(layers[3].price), 82250);
+
+  // Allocations must sum to exactly 50%
+  const totalAlloc = layers.reduce((s, l) => s + Number(l.allocation), 0);
+  assert.ok(Math.abs(totalAlloc - 50) < 1e-6);
+
+  // Now feed into calculatePosition with another 50% entry and verify each layer has near-identical risk!
+  const tradeCalc = calculatePosition({
+    direction: 'long',
+    entries: [
+      ...layers.map((l, i) => ({ id: i + 1, price: Number(l.price), allocationPercent: Number(l.allocation) })),
+      { id: 10, price: 80500, allocationPercent: 50 }
+    ],
+    stopLoss: 80000,
+    leverage: 10,
+    riskBudget: 100,
+    allocationBasis: 'notional',
+    sizingMethod: 'risk'
+  });
+
+  // All 4 layers must have virtually identical risk to each other
+  const layerRisks = tradeCalc.entries.slice(0, 4).map(e => e.stopLossRisk);
+  const minRisk = Math.min(...layerRisks);
+  const maxRisk = Math.max(...layerRisks);
+  assert.ok(maxRisk - minRisk < 0.05, `Max risk ${maxRisk} and min risk ${minRisk} should be equal`);
 });
 

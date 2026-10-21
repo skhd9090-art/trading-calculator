@@ -216,3 +216,74 @@ export function distributeEqualExits(targets) {
   });
 }
 
+/**
+ * Generates layered limit orders for an entry across a price range with Equal Risk Budget.
+ */
+export function createLayeredAllocations({
+  startPrice,
+  endPrice,
+  count,
+  parentAllocation,
+  stopLoss,
+  direction,
+  allocationBasis = 'notional'
+}) {
+  if (!Number.isFinite(startPrice) || startPrice <= 0 || !Number.isFinite(endPrice) || endPrice <= 0) {
+    throw new Error('Layer start and end prices must be positive numbers.');
+  }
+  if (startPrice === endPrice) {
+    throw new Error('Layer start and end prices must be different.');
+  }
+  if (!Number.isInteger(count) || count < 2 || count > 10) {
+    throw new Error('Layer count must be between 2 and 10.');
+  }
+  if (!Number.isFinite(parentAllocation) || parentAllocation <= 0) {
+    throw new Error('Parent allocation must be positive.');
+  }
+
+  const rawPrices = expandRange(Math.min(startPrice, endPrice), Math.max(startPrice, endPrice), count);
+  
+  // Sort descending for Long (highest entry / front-run first down to deepest limit)
+  // Sort ascending for Short (lowest entry / front-run first up to deepest limit)
+  const sortedPrices = direction === 'long'
+    ? [...rawPrices].sort((a, b) => b - a)
+    : [...rawPrices].sort((a, b) => a - b);
+
+  const hasValidStopLoss = Number.isFinite(stopLoss) && stopLoss > 0 &&
+    (direction === 'long' ? sortedPrices.every(p => p > stopLoss) : sortedPrices.every(p => p < stopLoss));
+
+  if (!hasValidStopLoss) {
+    const equalShare = parentAllocation / count;
+    return sortedPrices.map((price) => ({
+      price: price.toString(),
+      allocation: equalShare.toFixed(2),
+      filled: false
+    }));
+  }
+
+  // Equal Risk Budget Math
+  const distances = sortedPrices.map(p => direction === 'long' ? p - stopLoss : stopLoss - p);
+  
+  let weights;
+  if (allocationBasis === 'notional') {
+    const notionalFactors = sortedPrices.map((p, i) => p / distances[i]);
+    const sumFactors = notionalFactors.reduce((a, b) => a + b, 0);
+    weights = notionalFactors.map(f => f / sumFactors);
+  } else {
+    const qtyFactors = distances.map(d => 1 / d);
+    const sumFactors = qtyFactors.reduce((a, b) => a + b, 0);
+    weights = qtyFactors.map(f => f / sumFactors);
+  }
+
+  const allocations = weights.map(w => w * parentAllocation);
+  let rounded = allocations.map(a => Number(a.toFixed(2)));
+  const diff = Number((parentAllocation - rounded.reduce((a, b) => a + b, 0)).toFixed(2));
+  rounded[rounded.length - 1] = Number((rounded[rounded.length - 1] + diff).toFixed(2));
+
+  return sortedPrices.map((price, i) => ({
+    price: price.toString(),
+    allocation: rounded[i].toFixed(2),
+    filled: false
+  }));
+}
+
