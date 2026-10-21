@@ -102,6 +102,38 @@ export function saveNamedSetup(name, trade, scope = 'position') {
   }
 }
 
+export function updateNamedSetup(id, trade, scope = null) {
+  const setups = getSavedSetups();
+  const target = setups.find(s => s.id === id);
+  if (!target) return null;
+
+  const effectiveScope = scope || target.scope || 'position';
+  const tradePayload = effectiveScope === 'position' ? {
+    symbol: trade.symbol,
+    direction: trade.direction,
+    leverage: trade.leverage,
+    allocationBasis: trade.allocationBasis,
+    sizingMethod: trade.sizingMethod,
+    riskBudget: trade.riskBudget,
+    fixedSize: trade.fixedSize,
+    stopLoss: trade.stopLoss,
+    entries: clone(trade.entries),
+    scenario: trade.scenario || 'filled'
+  } : clone(trade);
+
+  target.trade = tradePayload;
+  target.scope = effectiveScope;
+  target.updatedAt = Date.now();
+
+  try {
+    localStorage.setItem(SETUPS_KEY, JSON.stringify(setups));
+    return target;
+  } catch (err) {
+    console.error('[Storage] Update setup failed:', err.message);
+    return null;
+  }
+}
+
 export function mergeSetupIntoTrade(currentTrade, loadedSetup) {
   if (!loadedSetup) return currentTrade;
   const loadedTrade = loadedSetup.trade || loadedSetup;

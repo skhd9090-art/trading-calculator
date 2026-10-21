@@ -6,8 +6,12 @@ export default function PositionSetup({
   onChange,
   onPriceFetched,
   savedSetups = [],
+  activeSetupId = null,
+  activeSetup = null,
   onLoadSetupById,
-  onQuickSave,
+  onSaveCurrent,
+  onSaveAs,
+  onUnlinkSetup,
   onOpenSetupsModal
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -21,22 +25,45 @@ export default function PositionSetup({
           <p className="panel-sub">Configure token, leverage, direction and sizing method.</p>
         </div>
         <div className="panel-header-actions">
-          <button
-            type="button"
-            className="btn-quick-setup"
-            onClick={() => onQuickSave('position')}
-            title="Save only this position setup (coin, leverage, sizing & entries) to browser storage"
-          >
-            💾 Save Position Only
-          </button>
-          <button
-            type="button"
-            className="btn-quick-setup btn-quick-setup-secondary"
-            onClick={() => onQuickSave('full')}
-            title="Save complete trade setup including take-profit targets to browser storage"
-          >
-            📋 Save Full Setup
-          </button>
+          {activeSetup ? (
+            <>
+              <button
+                type="button"
+                className="btn-quick-setup btn-quick-setup-save"
+                onClick={() => onSaveCurrent()}
+                title={`Overwrite & update "${activeSetup.name}" with current changes`}
+              >
+                💾 Save
+              </button>
+              <button
+                type="button"
+                className="btn-quick-setup btn-quick-setup-secondary"
+                onClick={() => onSaveAs(activeSetup.scope || 'position')}
+                title="Save as a new distinct setup with a new name"
+              >
+                📑 Save As...
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn-quick-setup"
+                onClick={() => onSaveAs('position')}
+                title="Save position setup (coin, leverage, sizing & entries) to browser storage"
+              >
+                💾 Save Position Only
+              </button>
+              <button
+                type="button"
+                className="btn-quick-setup btn-quick-setup-secondary"
+                onClick={() => onSaveAs('full')}
+                title="Save complete trade setup including take-profit targets to browser storage"
+              >
+                📋 Save Full Setup
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -45,26 +72,46 @@ export default function PositionSetup({
           <span className="quick-setups-title">📂 Setups:</span>
           <select
             className="select-base quick-setup-select"
-            value=""
+            value={activeSetupId || ''}
             onChange={e => {
-              if (e.target.value) {
+              if (e.target.value === '__new__') {
+                onUnlinkSetup?.();
+              } else if (e.target.value) {
                 onLoadSetupById(e.target.value);
-                e.target.value = '';
               }
             }}
           >
-            <option value="" disabled>
-              {savedSetups.length > 0
+            <option value="" disabled={Boolean(activeSetupId)}>
+              {activeSetup
+                ? `Active: ${activeSetup.name}`
+                : savedSetups.length > 0
                 ? `Saved Setups (${savedSetups.length})...`
                 : 'No saved setups yet'}
             </option>
             {savedSetups.map(s => (
               <option key={s.id} value={s.id}>
-                {s.scope === 'position' ? '🎯 [Pos] ' : '📋 [Full] '}
+                {s.id === activeSetupId ? '✓ ' : ''}{s.scope === 'position' ? '🎯 [Pos] ' : '📋 [Full] '}
                 {s.name} ({s.trade?.symbol || 'Trade'} {s.trade?.direction?.toUpperCase()})
               </option>
             ))}
+            {activeSetupId && <option value="__new__">＋ Start New / Unlink</option>}
           </select>
+
+          {activeSetup && (
+            <div className="active-setup-indicator">
+              <span className="active-setup-pill">
+                Editing: <strong>{activeSetup.name}</strong> ({activeSetup.scope === 'position' ? 'Pos' : 'Full'})
+              </span>
+              <button
+                type="button"
+                className="btn-tiny-unlink"
+                title="Unlink from this setup (future saves will prompt for a new name)"
+                onClick={onUnlinkSetup}
+              >
+                ✕ Unlink
+              </button>
+            </div>
+          )}
         </div>
         <div className="quick-setups-right">
           <button
@@ -119,14 +166,35 @@ export default function PositionSetup({
             ▼ Short
           </button>
         </div>
-        <button
-          type="button"
-          className="btn-quick-save-pill mobile-only-inline"
-          onClick={() => onQuickSave('position')}
-          title="Save this position setup"
-        >
-          💾 Save
-        </button>
+        {activeSetup ? (
+          <div className="mobile-save-btn-group mobile-only-flex">
+            <button
+              type="button"
+              className="btn-quick-save-pill btn-quick-save-overwrite"
+              onClick={() => onSaveCurrent()}
+              title={`Overwrite & update "${activeSetup.name}" with current changes`}
+            >
+              💾 Save
+            </button>
+            <button
+              type="button"
+              className="btn-quick-save-pill btn-quick-save-as"
+              onClick={() => onSaveAs(activeSetup.scope || 'position')}
+              title="Save as a new copy"
+            >
+              📑 Save As
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="btn-quick-save-pill mobile-only-inline"
+            onClick={() => onSaveAs('position')}
+            title="Save this position setup"
+          >
+            💾 Save
+          </button>
+        )}
       </div>
 
       <div className="two-col-grid risk-stop-row">

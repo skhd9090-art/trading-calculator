@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trading-calculator-v8';
+const CACHE_NAME = 'trading-calculator-v9';
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {

@@ -20,11 +20,13 @@ import {
   clone,
   getSavedSetups,
   saveNamedSetup,
+  updateNamedSetup,
   mergeSetupIntoTrade
 } from './services/storage.js';
 
 export default function App() {
   const [trade, setTrade] = useState(() => loadDraft());
+  const [activeSetupId, setActiveSetupId] = useState(null);
   const [livePrice, setLivePrice] = useState(null);
   const [saveStatus, setSaveStatus] = useState('Saved locally');
   const [savedSetups, setSavedSetups] = useState(() => getSavedSetups());
@@ -32,6 +34,11 @@ export default function App() {
   const [isSetupsOpen, setIsSetupsOpen] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [notification, setNotification] = useState('');
+
+  const activeSetup = useMemo(
+    () => savedSetups.find(s => s.id === activeSetupId) || null,
+    [savedSetups, activeSetupId]
+  );
 
   // Mobile Hybrid state
   const [mobileTab, setMobileTab] = useState('setup'); // 'setup' | 'entries' | 'targets'
@@ -211,6 +218,7 @@ export default function App() {
   const handleLoadSetup = loadedSetup => {
     const nextTrade = mergeSetupIntoTrade(trade, loadedSetup);
     setTrade(nextTrade);
+    setActiveSetupId(loadedSetup.id);
     const scopeLabel = loadedSetup.scope === 'position' ? 'position setup' : 'full trade setup';
     const setupName = loadedSetup.name || loadedSetup.trade?.symbol || 'setup';
     setNotification(`Loaded ${scopeLabel} "${setupName}"!`);
@@ -224,24 +232,49 @@ export default function App() {
     }
   };
 
-  const handleQuickSave = (scope = 'position') => {
-    const defaultName = `${trade.symbol || 'Trade'} ${trade.direction.toUpperCase()} (${scope === 'position' ? `${trade.entries.length} entries` : 'Full Plan'})`;
+  // Overwrite the existing active setup directly without prompt, or prompt if no setup is loaded
+  const handleSaveCurrentSetup = (scope = null) => {
+    if (activeSetupId && activeSetup) {
+      const targetScope = scope || activeSetup.scope || 'position';
+      const updated = updateNamedSetup(activeSetupId, trade, targetScope);
+      if (updated) {
+        refreshSetups();
+        const scopeText = targetScope === 'position' ? 'Position' : 'Full';
+        setNotification(`Updated existing setup "${updated.name}" (${scopeText})!`);
+      }
+    } else {
+      handleSaveAs(scope || 'position');
+    }
+  };
+
+  // Save As...: Always prompts for a new name and saves as a separate distinct setup
+  const handleSaveAs = (scope = 'position') => {
+    const defaultName = activeSetup
+      ? `${activeSetup.name} (Copy)`
+      : `${trade.symbol || 'Trade'} ${trade.direction.toUpperCase()} (${scope === 'position' ? `${trade.entries.length} entries` : 'Full Plan'})`;
     const promptMsg = scope === 'position'
-      ? 'Enter a name to save this position setup (coin, leverage, sizing & entries) locally in your browser:'
-      : 'Enter a name to save this full setup (including Take-Profit targets) locally in your browser:';
+      ? 'Enter a name to save as a NEW position setup in your browser:'
+      : 'Enter a name to save as a NEW full setup (including Take-Profit targets) in your browser:';
     const entered = window.prompt(promptMsg, defaultName);
     if (!entered || !entered.trim()) return;
 
     const saved = saveNamedSetup(entered.trim(), trade, scope);
     if (saved) {
+      setActiveSetupId(saved.id);
       refreshSetups();
-      setNotification(`Saved ${scope === 'position' ? 'position setup' : 'full setup'} "${saved.name}" to browser storage!`);
+      setNotification(`Saved new setup "${saved.name}" to browser storage!`);
     }
+  };
+
+  const handleUnlinkSetup = () => {
+    setActiveSetupId(null);
+    setNotification('Unlinked from saved setup. Any future saves will prompt for a new setup name.');
   };
 
   const handleReset = () => {
     if (window.confirm('Reset calculator to default BTC setup?')) {
       setTrade(clone(INITIAL_TRADE));
+      setActiveSetupId(null);
       setNotification('Reset calculator to defaults.');
     }
   };
@@ -365,8 +398,12 @@ export default function App() {
             onChange={setTrade}
             onPriceFetched={handlePriceFetched}
             savedSetups={savedSetups}
+            activeSetupId={activeSetupId}
+            activeSetup={activeSetup}
             onLoadSetupById={handleLoadSetupById}
-            onQuickSave={handleQuickSave}
+            onSaveCurrent={handleSaveCurrentSetup}
+            onSaveAs={handleSaveAs}
+            onUnlinkSetup={handleUnlinkSetup}
             onOpenSetupsModal={() => {
               refreshSetups();
               setIsSetupsOpen(true);
@@ -641,7 +678,12 @@ export default function App() {
           refreshSetups();
         }}
         currentTrade={trade}
+        activeSetupId={activeSetupId}
+        activeSetup={activeSetup}
         onLoadSetup={handleLoadSetup}
+        onSaveCurrent={handleSaveCurrentSetup}
+        onSaveAs={handleSaveAs}
+        onUnlinkSetup={handleUnlinkSetup}
       />
     </div>
   );

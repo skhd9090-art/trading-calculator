@@ -12,7 +12,12 @@ export default function SetupsModal({
   isOpen,
   onClose,
   currentTrade,
-  onLoadSetup
+  activeSetupId = null,
+  activeSetup = null,
+  onLoadSetup,
+  onSaveCurrent,
+  onSaveAs,
+  onUnlinkSetup
 }) {
   const [setups, setSetups] = useState([]);
   const [newSetupName, setNewSetupName] = useState('');
@@ -30,24 +35,39 @@ export default function SetupsModal({
       refreshList();
       const scopeLabel = saveScope === 'position' ? 'Position' : 'Full';
       setNewSetupName(
-        `${currentTrade.symbol || 'Trade'} ${currentTrade.direction.toUpperCase()} (${scopeLabel})`
+        activeSetup
+          ? `${activeSetup.name} (Copy)`
+          : `${currentTrade.symbol || 'Trade'} ${currentTrade.direction.toUpperCase()} (${scopeLabel})`
       );
     }
-  }, [isOpen, currentTrade, saveScope]);
+  }, [isOpen, currentTrade, saveScope, activeSetup]);
 
   if (!isOpen) return null;
 
-  const handleSaveCurrent = e => {
-    e.preventDefault();
+  const handleSaveAsNew = e => {
+    if (e) e.preventDefault();
     if (!newSetupName.trim()) return;
-    saveNamedSetup(newSetupName, currentTrade, saveScope);
+    const saved = saveNamedSetup(newSetupName.trim(), currentTrade, saveScope);
     setNewSetupName('');
     refreshList();
+    if (saved && onLoadSetup) {
+      onLoadSetup(saved);
+    }
+  };
+
+  const handleOverwrite = () => {
+    if (onSaveCurrent) {
+      onSaveCurrent(saveScope);
+      refreshList();
+    }
   };
 
   const handleDelete = id => {
     if (window.confirm('Are you sure you want to delete this saved setup?')) {
       deleteNamedSetup(id);
+      if (id === activeSetupId && onUnlinkSetup) {
+        onUnlinkSetup();
+      }
       refreshList();
     }
   };
@@ -128,7 +148,7 @@ export default function SetupsModal({
           🌐 <strong>Web-side storage:</strong> Setups are saved directly in your browser's localStorage. Private, instant, and available offline.
         </p>
 
-        <form onSubmit={handleSaveCurrent} className="save-current-form">
+        <div className="save-current-form">
           <div className="save-form-header">
             <label className="field-label">Save Current Calculator Setup</label>
             <div className="scope-radio-toggle">
@@ -153,24 +173,57 @@ export default function SetupsModal({
             </div>
           </div>
 
-          <div className="save-input-row">
-            <input
-              type="text"
-              className="input-base"
-              placeholder="Give your trade setup a name..."
-              value={newSetupName}
-              onChange={e => setNewSetupName(e.target.value)}
-            />
-            <button type="submit" className="btn-primary" disabled={!newSetupName.trim()}>
-              💾 Save Setup
-            </button>
-          </div>
+          {activeSetup ? (
+            <div className="active-setup-save-options">
+              <div className="active-setup-notice">
+                <span>Active Setup: <strong>{activeSetup.name}</strong></span>
+                <button
+                  type="button"
+                  className="btn-primary btn-overwrite"
+                  onClick={handleOverwrite}
+                >
+                  💾 Overwrite "{activeSetup.name}"
+                </button>
+              </div>
+
+              <div className="save-divider-line">
+                <span>OR SAVE AS NEW SETUP</span>
+              </div>
+
+              <form onSubmit={handleSaveAsNew} className="save-input-row">
+                <input
+                  type="text"
+                  className="input-base"
+                  placeholder="New setup name..."
+                  value={newSetupName}
+                  onChange={e => setNewSetupName(e.target.value)}
+                />
+                <button type="submit" className="btn-secondary" disabled={!newSetupName.trim()}>
+                  📑 Save As New
+                </button>
+              </form>
+            </div>
+          ) : (
+            <form onSubmit={handleSaveAsNew} className="save-input-row">
+              <input
+                type="text"
+                className="input-base"
+                placeholder="Give your trade setup a name..."
+                value={newSetupName}
+                onChange={e => setNewSetupName(e.target.value)}
+              />
+              <button type="submit" className="btn-primary" disabled={!newSetupName.trim()}>
+                💾 Save Setup
+              </button>
+            </form>
+          )}
+
           <small className="save-hint">
             {saveScope === 'position'
               ? '🎯 Position Only saves coin, leverage, direction, sizing & entries. Take profits will remain untouched when loaded.'
               : '📋 Full Setup saves entire trade configuration including Take-Profit targets and exit plan.'}
           </small>
-        </form>
+        </div>
 
         <div className="setups-filter-tabs">
           <button
@@ -242,6 +295,9 @@ export default function SetupsModal({
                         <div>
                           <div className="setup-title-row">
                             <strong className="setup-title">{s.name}</strong>
+                            {s.id === activeSetupId && (
+                              <span className="badge-active-tag">Active</span>
+                            )}
                             <span className={`badge-scope ${isPositionOnly ? 'badge-position' : 'badge-full'}`}>
                               {isPositionOnly ? '🎯 Position Only' : '📋 Full Setup'}
                             </span>

@@ -1209,6 +1209,116 @@ body {
   text-decoration: underline;
 }
 
+.btn-quick-setup-save {
+  background: #10b981 !important;
+  color: white !important;
+  border-color: #059669 !important;
+}
+
+.btn-quick-setup-save:hover {
+  background: #059669 !important;
+}
+
+.active-setup-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.active-setup-pill {
+  font-size: 11px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-tiny-unlink {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 4px;
+  text-decoration: underline;
+}
+
+.btn-tiny-unlink:hover {
+  color: var(--danger);
+}
+
+.active-setup-save-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.active-setup-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  color: #1e3a8a;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-overwrite {
+  background: #10b981 !important;
+  border-color: #059669 !important;
+  font-size: 12px !important;
+  padding: 5px 12px !important;
+}
+
+.btn-overwrite:hover {
+  background: #059669 !important;
+}
+
+.save-divider-line {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 4px 0;
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.save-divider-line::before,
+.save-divider-line::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.save-divider-line span {
+  padding: 0 8px;
+}
+
+.badge-active-tag {
+  background: #10b981;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  margin-left: 6px;
+  display: inline-block;
+}
+
 .modal-desc-subtle {
   font-size: 12.5px;
   color: var(--text-muted);
@@ -2058,6 +2168,23 @@ body {
     font-weight: 700;
     white-space: nowrap;
     cursor: pointer;
+  }
+
+  .mobile-save-btn-group {
+    display: flex !important;
+    gap: 5px !important;
+  }
+
+  .btn-quick-save-overwrite {
+    background: #10b981 !important;
+    color: white !important;
+    border-color: #059669 !important;
+  }
+
+  .btn-quick-save-as {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
   }
 
   .risk-stop-row {
