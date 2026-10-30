@@ -1343,6 +1343,16 @@ body {
   gap: 2px;
 }
 
+.save-scope-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+}
+
 .scope-pill {
   display: inline-flex;
   align-items: center;

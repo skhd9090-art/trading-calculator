@@ -67,27 +67,30 @@ export function getSavedSetups() {
   }
 }
 
-export function saveNamedSetup(name, trade, scope = 'position') {
+export function saveNamedSetup(name, trade, scope = 'full') {
   const setups = getSavedSetups();
   const id = 'setup_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
   
-  const tradePayload = scope === 'position' ? {
-    symbol: trade.symbol,
-    direction: trade.direction,
-    leverage: trade.leverage,
-    allocationBasis: trade.allocationBasis,
-    sizingMethod: trade.sizingMethod,
-    riskBudget: trade.riskBudget,
-    fixedSize: trade.fixedSize,
-    stopLoss: trade.stopLoss,
-    entries: clone(trade.entries),
-    scenario: trade.scenario || 'filled'
-  } : clone(trade);
+  // Always save complete trade payload to guarantee 100% data isolation and prevent cross-coin leakage
+  const tradePayload = {
+    symbol: trade.symbol || 'BTC',
+    direction: trade.direction || 'long',
+    leverage: trade.leverage != null ? String(trade.leverage) : '10',
+    allocationBasis: trade.allocationBasis || 'notional',
+    sizingMethod: trade.sizingMethod || 'risk',
+    riskBudget: trade.riskBudget != null ? String(trade.riskBudget) : '100',
+    fixedSize: trade.fixedSize != null ? String(trade.fixedSize) : '1000',
+    stopLoss: trade.stopLoss != null ? String(trade.stopLoss) : '',
+    entries: Array.isArray(trade.entries) ? clone(trade.entries) : [],
+    targets: Array.isArray(trade.targets) ? clone(trade.targets) : [],
+    scenario: trade.scenario || 'filled',
+    exitMode: trade.exitMode || 'partial'
+  };
 
   const newSetup = {
     id,
-    name: name.trim() || `${trade.symbol || 'Trade'} ${trade.direction.toUpperCase()} (${scope === 'position' ? 'Position' : 'Full'})`,
-    scope: scope || 'position', // 'position' | 'full'
+    name: name.trim() || `${tradePayload.symbol} ${tradePayload.direction.toUpperCase()} Setup`,
+    scope: 'full', // Always full setup to preserve all targets and parameters
     createdAt: Date.now(),
     updatedAt: Date.now(),
     trade: tradePayload
@@ -107,22 +110,24 @@ export function updateNamedSetup(id, trade, scope = null) {
   const target = setups.find(s => s.id === id);
   if (!target) return null;
 
-  const effectiveScope = scope || target.scope || 'position';
-  const tradePayload = effectiveScope === 'position' ? {
-    symbol: trade.symbol,
-    direction: trade.direction,
-    leverage: trade.leverage,
-    allocationBasis: trade.allocationBasis,
-    sizingMethod: trade.sizingMethod,
-    riskBudget: trade.riskBudget,
-    fixedSize: trade.fixedSize,
-    stopLoss: trade.stopLoss,
-    entries: clone(trade.entries),
-    scenario: trade.scenario || 'filled'
-  } : clone(trade);
+  // Always save full trade payload including targets to prevent dropping targets on save
+  const tradePayload = {
+    symbol: trade.symbol || target.trade?.symbol || 'BTC',
+    direction: trade.direction || target.trade?.direction || 'long',
+    leverage: trade.leverage != null ? String(trade.leverage) : (target.trade?.leverage || '10'),
+    allocationBasis: trade.allocationBasis || target.trade?.allocationBasis || 'notional',
+    sizingMethod: trade.sizingMethod || target.trade?.sizingMethod || 'risk',
+    riskBudget: trade.riskBudget != null ? String(trade.riskBudget) : (target.trade?.riskBudget || '100'),
+    fixedSize: trade.fixedSize != null ? String(trade.fixedSize) : (target.trade?.fixedSize || '1000'),
+    stopLoss: trade.stopLoss != null ? String(trade.stopLoss) : (target.trade?.stopLoss || ''),
+    entries: Array.isArray(trade.entries) ? clone(trade.entries) : (target.trade?.entries || []),
+    targets: Array.isArray(trade.targets) ? clone(trade.targets) : (target.trade?.targets || []),
+    scenario: trade.scenario || target.trade?.scenario || 'filled',
+    exitMode: trade.exitMode || target.trade?.exitMode || 'partial'
+  };
 
   target.trade = tradePayload;
-  target.scope = effectiveScope;
+  target.scope = 'full'; // Upgrade to full setup so it retains all properties
   target.updatedAt = Date.now();
 
   try {
@@ -137,29 +142,34 @@ export function updateNamedSetup(id, trade, scope = null) {
 export function mergeSetupIntoTrade(currentTrade, loadedSetup) {
   if (!loadedSetup) return currentTrade;
   const loadedTrade = loadedSetup.trade || loadedSetup;
-  const isPositionOnly = loadedSetup.scope === 'position' || (!loadedTrade.targets && Array.isArray(loadedTrade.entries));
 
-  if (isPositionOnly) {
-    return {
-      ...currentTrade,
-      symbol: loadedTrade.symbol ?? currentTrade.symbol,
-      direction: loadedTrade.direction ?? currentTrade.direction,
-      leverage: loadedTrade.leverage ?? currentTrade.leverage,
-      allocationBasis: loadedTrade.allocationBasis ?? currentTrade.allocationBasis,
-      sizingMethod: loadedTrade.sizingMethod ?? currentTrade.sizingMethod,
-      riskBudget: loadedTrade.riskBudget ?? currentTrade.riskBudget,
-      fixedSize: loadedTrade.fixedSize ?? currentTrade.fixedSize,
-      stopLoss: loadedTrade.stopLoss ?? currentTrade.stopLoss,
-      entries: Array.isArray(loadedTrade.entries) ? clone(loadedTrade.entries) : currentTrade.entries,
-      scenario: loadedTrade.scenario ?? currentTrade.scenario
-      // Current targets and exitMode are preserved!
-    };
+  const merged = clone(INITIAL_TRADE);
+
+  merged.symbol = loadedTrade.symbol ?? 'BTC';
+  merged.direction = loadedTrade.direction ?? 'long';
+  merged.leverage = loadedTrade.leverage != null ? String(loadedTrade.leverage) : '10';
+  merged.allocationBasis = loadedTrade.allocationBasis ?? 'notional';
+  merged.sizingMethod = loadedTrade.sizingMethod ?? 'risk';
+  merged.riskBudget = loadedTrade.riskBudget != null ? String(loadedTrade.riskBudget) : '100';
+  merged.fixedSize = loadedTrade.fixedSize != null ? String(loadedTrade.fixedSize) : '1000';
+  merged.stopLoss = loadedTrade.stopLoss != null ? String(loadedTrade.stopLoss) : '';
+  merged.entries = Array.isArray(loadedTrade.entries) ? clone(loadedTrade.entries) : clone(INITIAL_TRADE.entries);
+  merged.scenario = loadedTrade.scenario ?? 'filled';
+  merged.exitMode = loadedTrade.exitMode ?? 'partial';
+
+  // Strict isolation for Take-Profit targets:
+  // If the loaded setup has saved targets, load them.
+  // If it's a legacy setup with NO targets saved, NEVER leak targets from the previously open coin!
+  // Instead, provide clean/empty target rows so user can set targets for this token.
+  if (Array.isArray(loadedTrade.targets) && loadedTrade.targets.length > 0) {
+    merged.targets = clone(loadedTrade.targets);
+  } else {
+    merged.targets = [
+      { id: 1, price: '', label: 'TP1', exit: '' }
+    ];
   }
 
-  return {
-    ...clone(INITIAL_TRADE),
-    ...clone(loadedTrade)
-  };
+  return merged;
 }
 
 export function deleteNamedSetup(id) {

@@ -181,9 +181,27 @@ export default function App() {
     }
   };
 
+  const handleTradeChange = updatedTrade => {
+    // If user changes symbol to something different from activeSetup's symbol, unlink!
+    // This prevents accidental overwrite of e.g. HYPE when user switches token to SOL or BTC.
+    if (activeSetup && updatedTrade.symbol && activeSetup.trade?.symbol) {
+      const currentSym = updatedTrade.symbol.trim().toUpperCase();
+      const activeSym = activeSetup.trade.symbol.trim().toUpperCase();
+      if (currentSym !== activeSym) {
+        setActiveSetupId(null);
+        setNotification(`Switched token to ${currentSym} (unlinked from "${activeSetup.name}")`);
+      }
+    }
+    setTrade(updatedTrade);
+  };
+
   const handleApplyParsedTrade = parsedData => {
+    // 1. Immediately unlink active setup so the new parsed signal cannot overwrite an existing setup!
+    setActiveSetupId(null);
+
+    // 2. Build isolated trade state
     setTrade(prev => {
-      const next = clone(prev);
+      const next = clone(INITIAL_TRADE);
       if (parsedData.symbol) next.symbol = parsedData.symbol;
       if (parsedData.direction) next.direction = parsedData.direction;
       if (parsedData.leverage) next.leverage = parsedData.leverage.toString();
@@ -199,6 +217,7 @@ export default function App() {
         }));
       }
 
+      // Isolate take profit targets: use parsed targets if provided, else clean empty targets
       if (Array.isArray(parsedData.takeProfits) && parsedData.takeProfits.length > 0) {
         next.targets = parsedData.takeProfits.map((tp, idx) => ({
           id: idx + 1,
@@ -206,12 +225,20 @@ export default function App() {
           label: tp.label || `TP${idx + 1}`,
           exit: tp.exit != null ? tp.exit.toString() : ''
         }));
+      } else {
+        next.targets = [{ id: 1, price: '', label: 'TP1', exit: '' }];
       }
+
+      // Retain preferred user sizing preferences from previous state
+      if (prev.riskBudget) next.riskBudget = prev.riskBudget;
+      if (prev.allocationBasis) next.allocationBasis = prev.allocationBasis;
+      if (prev.sizingMethod) next.sizingMethod = prev.sizingMethod;
+      if (prev.fixedSize) next.fixedSize = prev.fixedSize;
 
       return next;
     });
 
-    setNotification(`Applied ${parsedData.symbol || 'trade'} signal to calculator!`);
+    setNotification(`Applied ${parsedData.symbol || 'trade'} signal! (New unlinked setup)`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -219,9 +246,8 @@ export default function App() {
     const nextTrade = mergeSetupIntoTrade(trade, loadedSetup);
     setTrade(nextTrade);
     setActiveSetupId(loadedSetup.id);
-    const scopeLabel = loadedSetup.scope === 'position' ? 'position setup' : 'full trade setup';
     const setupName = loadedSetup.name || loadedSetup.trade?.symbol || 'setup';
-    setNotification(`Loaded ${scopeLabel} "${setupName}"!`);
+    setNotification(`Loaded trade setup "${setupName}"!`);
     refreshSetups();
   };
 
@@ -233,32 +259,28 @@ export default function App() {
   };
 
   // Overwrite the existing active setup directly without prompt, or prompt if no setup is loaded
-  const handleSaveCurrentSetup = (scope = null) => {
+  const handleSaveCurrentSetup = () => {
     if (activeSetupId && activeSetup) {
-      const targetScope = scope || activeSetup.scope || 'position';
-      const updated = updateNamedSetup(activeSetupId, trade, targetScope);
+      const updated = updateNamedSetup(activeSetupId, trade, 'full');
       if (updated) {
         refreshSetups();
-        const scopeText = targetScope === 'position' ? 'Position' : 'Full';
-        setNotification(`Updated existing setup "${updated.name}" (${scopeText})!`);
+        setNotification(`Updated existing setup "${updated.name}"!`);
       }
     } else {
-      handleSaveAs(scope || 'position');
+      handleSaveAs();
     }
   };
 
   // Save As...: Always prompts for a new name and saves as a separate distinct setup
-  const handleSaveAs = (scope = 'position') => {
+  const handleSaveAs = () => {
     const defaultName = activeSetup
       ? `${activeSetup.name} (Copy)`
-      : `${trade.symbol || 'Trade'} ${trade.direction.toUpperCase()} (${scope === 'position' ? `${trade.entries.length} entries` : 'Full Plan'})`;
-    const promptMsg = scope === 'position'
-      ? 'Enter a name to save as a NEW position setup in your browser:'
-      : 'Enter a name to save as a NEW full setup (including Take-Profit targets) in your browser:';
+      : `${trade.symbol || 'Trade'} ${trade.direction.toUpperCase()} (${trade.entries.length} entries)`;
+    const promptMsg = 'Enter a name to save as a NEW trade setup in your browser:';
     const entered = window.prompt(promptMsg, defaultName);
     if (!entered || !entered.trim()) return;
 
-    const saved = saveNamedSetup(entered.trim(), trade, scope);
+    const saved = saveNamedSetup(entered.trim(), trade, 'full');
     if (saved) {
       setActiveSetupId(saved.id);
       refreshSetups();
@@ -395,7 +417,7 @@ export default function App() {
         <div className="panel-section-wrap panel-section-setup">
           <PositionSetup
             trade={trade}
-            onChange={setTrade}
+            onChange={handleTradeChange}
             onPriceFetched={handlePriceFetched}
             savedSetups={savedSetups}
             activeSetupId={activeSetupId}
@@ -485,7 +507,7 @@ export default function App() {
             <button
               type="button"
               className="btn-primary"
-              onClick={() => handleQuickSave('full')}
+              onClick={() => handleSaveCurrentSetup()}
             >
               💾 Save Setup
             </button>

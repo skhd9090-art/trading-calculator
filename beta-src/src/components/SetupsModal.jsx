@@ -21,7 +21,6 @@ export default function SetupsModal({
 }) {
   const [setups, setSetups] = useState([]);
   const [newSetupName, setNewSetupName] = useState('');
-  const [saveScope, setSaveScope] = useState('position'); // 'position' | 'full'
   const [filterScope, setFilterScope] = useState('all'); // 'all' | 'position' | 'full'
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -33,21 +32,20 @@ export default function SetupsModal({
   useEffect(() => {
     if (isOpen) {
       refreshList();
-      const scopeLabel = saveScope === 'position' ? 'Position' : 'Full';
       setNewSetupName(
         activeSetup
           ? `${activeSetup.name} (Copy)`
-          : `${currentTrade.symbol || 'Trade'} ${currentTrade.direction.toUpperCase()} (${scopeLabel})`
+          : `${currentTrade.symbol || 'Trade'} ${currentTrade.direction.toUpperCase()} Setup`
       );
     }
-  }, [isOpen, currentTrade, saveScope, activeSetup]);
+  }, [isOpen, currentTrade, activeSetup]);
 
   if (!isOpen) return null;
 
   const handleSaveAsNew = e => {
     if (e) e.preventDefault();
     if (!newSetupName.trim()) return;
-    const saved = saveNamedSetup(newSetupName.trim(), currentTrade, saveScope);
+    const saved = saveNamedSetup(newSetupName.trim(), currentTrade, 'full');
     setNewSetupName('');
     refreshList();
     if (saved && onLoadSetup) {
@@ -57,7 +55,7 @@ export default function SetupsModal({
 
   const handleOverwrite = () => {
     if (onSaveCurrent) {
-      onSaveCurrent(saveScope);
+      onSaveCurrent('full');
       refreshList();
     }
   };
@@ -151,26 +149,7 @@ export default function SetupsModal({
         <div className="save-current-form">
           <div className="save-form-header">
             <label className="field-label">Save Current Calculator Setup</label>
-            <div className="scope-radio-toggle">
-              <label className={`scope-pill ${saveScope === 'position' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="saveScope"
-                  checked={saveScope === 'position'}
-                  onChange={() => setSaveScope('position')}
-                />
-                <span>🎯 Position Only</span>
-              </label>
-              <label className={`scope-pill ${saveScope === 'full' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="saveScope"
-                  checked={saveScope === 'full'}
-                  onChange={() => setSaveScope('full')}
-                />
-                <span>📋 Full (+ TPs)</span>
-              </label>
-            </div>
+            <span className="save-scope-badge">📋 Complete Trade Setup</span>
           </div>
 
           {activeSetup ? (
@@ -219,9 +198,7 @@ export default function SetupsModal({
           )}
 
           <small className="save-hint">
-            {saveScope === 'position'
-              ? '🎯 Position Only saves coin, leverage, direction, sizing & entries. Take profits will remain untouched when loaded.'
-              : '📋 Full Setup saves entire trade configuration including Take-Profit targets and exit plan.'}
+            📋 Saves entire trade configuration including entries, stop-loss, take-profit targets, and sizing.
           </small>
         </div>
 

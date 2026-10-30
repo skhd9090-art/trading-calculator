@@ -38,31 +38,21 @@ export default function PositionSetup({
               <button
                 type="button"
                 className="btn-quick-setup btn-quick-setup-secondary"
-                onClick={() => onSaveAs(activeSetup.scope || 'position')}
+                onClick={() => onSaveAs()}
                 title="Save as a new distinct setup with a new name"
               >
                 📑 Save As...
               </button>
             </>
           ) : (
-            <>
-              <button
-                type="button"
-                className="btn-quick-setup"
-                onClick={() => onSaveAs('position')}
-                title="Save position setup (coin, leverage, sizing & entries) to browser storage"
-              >
-                💾 Save Position Only
-              </button>
-              <button
-                type="button"
-                className="btn-quick-setup btn-quick-setup-secondary"
-                onClick={() => onSaveAs('full')}
-                title="Save complete trade setup including take-profit targets to browser storage"
-              >
-                📋 Save Full Setup
-              </button>
-            </>
+            <button
+              type="button"
+              className="btn-quick-setup btn-quick-setup-save"
+              onClick={() => onSaveAs()}
+              title="Save complete trade setup (entries & targets) to browser storage"
+            >
+              💾 Save Setup
+            </button>
           )}
         </div>
       </div>
@@ -90,7 +80,7 @@ export default function PositionSetup({
             </option>
             {savedSetups.map(s => (
               <option key={s.id} value={s.id}>
-                {s.id === activeSetupId ? '✓ ' : ''}{s.scope === 'position' ? '🎯 [Pos] ' : '📋 [Full] '}
+                {s.id === activeSetupId ? '✓ ' : ''}
                 {s.name} ({s.trade?.symbol || 'Trade'} {s.trade?.direction?.toUpperCase()})
               </option>
             ))}
@@ -100,7 +90,7 @@ export default function PositionSetup({
           {activeSetup && (
             <div className="active-setup-indicator">
               <span className="active-setup-pill">
-                Editing: <strong>{activeSetup.name}</strong> ({activeSetup.scope === 'position' ? 'Pos' : 'Full'})
+                Editing: <strong>{activeSetup.name}</strong>
               </span>
               <button
                 type="button"
@@ -179,7 +169,7 @@ export default function PositionSetup({
             <button
               type="button"
               className="btn-quick-save-pill btn-quick-save-as"
-              onClick={() => onSaveAs(activeSetup.scope || 'position')}
+              onClick={() => onSaveAs()}
               title="Save as a new copy"
             >
               📑 Save As
@@ -189,8 +179,8 @@ export default function PositionSetup({
           <button
             type="button"
             className="btn-quick-save-pill mobile-only-inline"
-            onClick={() => onSaveAs('position')}
-            title="Save this position setup"
+            onClick={() => onSaveAs()}
+            title="Save this complete trade setup"
           >
             💾 Save
           </button>
