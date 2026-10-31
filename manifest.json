@@ -1,13 +1,14 @@
 {
-  "name": "Trading Calculator",
-  "short_name": "Trading Calc",
-  "description": "Calculate position size, risk, and stop loss for trading",
+  "name": "PositionLab",
+  "short_name": "PositionLab",
+  "description": "Multi-entry position sizing, fill scenario simulator & AI signal parser",
+  "id": "positionlab-app-v1",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
-  "theme_color": "#2f6fed",
+  "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "icons": [
     {

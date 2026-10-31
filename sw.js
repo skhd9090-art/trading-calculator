@@ -1,4 +1,4 @@
-const CACHE_NAME = 'positionlab-v12';
+const CACHE_NAME = 'positionlab-v13';
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {
@@ -22,17 +22,18 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch event:
-// 1. Bypass dynamic third-party APIs (Binance, MEXC, Groq)
+// 1. Bypass dynamic third-party APIs (Binance, MEXC, Groq) and manifest.json
 // 2. Navigation requests: Stale-While-Revalidate (opens in 0ms from cache, updates in background)
 // 3. Static hashed assets (JS/CSS/images/icons): Cache-First (instant 0ms retrieval)
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Bypass third-party external APIs completely
+  // Bypass third-party external APIs and manifest.json completely
   if (
     url.hostname.includes('binance') ||
     url.hostname.includes('mexc') ||
-    url.hostname.includes('groq.com')
+    url.hostname.includes('groq.com') ||
+    url.pathname.includes('manifest.json')
   ) {
     return;
   }

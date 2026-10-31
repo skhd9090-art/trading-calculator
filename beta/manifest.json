@@ -1,5 +1,5 @@
 {
-  "name": "PositionLab - Trade & Fill Simulator",
+  "name": "PositionLab",
   "short_name": "PositionLab",
   "description": "Multi-entry position sizing, fill scenario simulator & AI signal parser",
   "id": "positionlab-app-v1",
