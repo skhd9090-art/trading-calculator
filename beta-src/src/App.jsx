@@ -15,6 +15,8 @@ import {
 import {
   loadDraft,
   saveDraft,
+  loadUIState,
+  saveUIState,
   exportSetupToFile,
   INITIAL_TRADE,
   clone,
@@ -26,7 +28,8 @@ import {
 
 export default function App() {
   const [trade, setTrade] = useState(() => loadDraft());
-  const [activeSetupId, setActiveSetupId] = useState(null);
+  const [uiState] = useState(() => loadUIState());
+  const [activeSetupId, setActiveSetupId] = useState(uiState.activeSetupId);
   const [livePrice, setLivePrice] = useState(null);
   const [saveStatus, setSaveStatus] = useState('Saved locally');
   const [savedSetups, setSavedSetups] = useState(() => getSavedSetups());
@@ -35,15 +38,49 @@ export default function App() {
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [notification, setNotification] = useState('');
 
+  // PWA Installation handling
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches || Boolean(window.navigator.standalone);
+  });
+
   const activeSetup = useMemo(
     () => savedSetups.find(s => s.id === activeSetupId) || null,
     [savedSetups, activeSetupId]
   );
 
-  // Mobile Hybrid state
-  const [mobileTab, setMobileTab] = useState('setup'); // 'setup' | 'entries' | 'targets'
+  // Mobile Hybrid state (restored from previous session so switching apps never loses your tab)
+  const [mobileTab, setMobileTab] = useState(uiState.mobileTab || 'setup'); // 'setup' | 'entries' | 'targets'
   const [isHudExpanded, setIsHudExpanded] = useState(false);
   const [mobileMode, setMobileMode] = useState('tabs'); // 'tabs' | 'continuous'
+
+  // Persist active setup and tab across background app switches and browser tab discards
+  useEffect(() => {
+    saveUIState({ activeSetupId, mobileTab });
+  }, [activeSetupId, mobileTab]);
+
+  // Listen for native PWA installation event on mobile/desktop
+  useEffect(() => {
+    const handleBeforeInstall = e => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+      setIsStandalone(true);
+      setNotification('Trading Calculator installed as standalone PWA!');
+    }
+  };
 
   const refreshSetups = () => {
     setSavedSetups(getSavedSetups());
@@ -346,6 +383,16 @@ export default function App() {
           </div>
 
           <div className="header-nav-actions">
+            {installPrompt && !isStandalone && (
+              <button
+                type="button"
+                className="btn-action-install"
+                onClick={handleInstallClick}
+                title="Install Trading Calculator to your phone so it stays open across app switching"
+              >
+                📲 <span className="btn-label-text">Install App</span>
+              </button>
+            )}
             <button
               type="button"
               className="btn-action-primary"

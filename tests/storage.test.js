@@ -6,7 +6,9 @@ import {
   mergeSetupIntoTrade,
   saveNamedSetup,
   updateNamedSetup,
-  getSavedSetups
+  getSavedSetups,
+  loadUIState,
+  saveUIState
 } from '../beta-src/src/services/storage.js';
 
 test('mergeSetupIntoTrade: loaded setup with targets restores its own targets', () => {
@@ -122,4 +124,12 @@ test('saveNamedSetup & updateNamedSetup: always preserves targets and upgrades s
   assert.equal(updated.trade.targets.length, 2);
   assert.equal(updated.trade.targets[0].price, '215');
   assert.equal(updated.trade.targets[1].price, '230');
+});
+
+test('saveUIState & loadUIState: preserves active setup and mobile tab across browser discards', () => {
+  const state = { activeSetupId: 'setup_test_123', mobileTab: 'targets' };
+  saveUIState(state);
+  const loaded = loadUIState();
+  assert.equal(loaded.activeSetupId, 'setup_test_123');
+  assert.equal(loaded.mobileTab, 'targets');
 });

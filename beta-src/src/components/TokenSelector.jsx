@@ -87,7 +87,7 @@ export default function TokenSelector({ symbol, onSelectSymbol, onPriceFetched }
               <div className="autocomplete-header">
                 {search.trim() ? `Matching Tokens (${filtered.length})` : 'Popular Tokens'}
               </div>
-              {filtered.map(t => (
+              {filtered.slice(0, 30).map(t => (
                 <div key={t} className="autocomplete-item" onClick={() => handleSelect(t)}>
                   <strong>{t}</strong>
                   <span className="pair-sub">/USDT</span>

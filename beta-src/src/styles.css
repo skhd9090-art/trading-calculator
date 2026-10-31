@@ -118,6 +118,24 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+.btn-action-install {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.btn-action-install:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
 .btn-action-outline {
   background: white;
   color: var(--text-main);
@@ -1962,6 +1980,7 @@ body {
   .header-nav-actions .btn-label-text {
     display: none !important;
   }
+  .header-nav-actions .btn-action-install,
   .header-nav-actions .btn-action-primary,
   .header-nav-actions .btn-action-outline,
   .header-nav-actions .btn-action-nav {

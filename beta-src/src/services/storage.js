@@ -25,9 +25,33 @@ export const INITIAL_TRADE = {
 
 const DRAFT_KEY = 'tc_beta_draft_v1';
 const SETUPS_KEY = 'tc_beta_setups_v1';
+const UI_STATE_KEY = 'tc_beta_ui_state_v1';
 
 export function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
+}
+
+export function loadUIState() {
+  try {
+    const raw = localStorage.getItem(UI_STATE_KEY);
+    if (!raw) return { activeSetupId: null, mobileTab: 'setup' };
+    const parsed = JSON.parse(raw);
+    return {
+      activeSetupId: parsed.activeSetupId || null,
+      mobileTab: parsed.mobileTab || 'setup'
+    };
+  } catch {
+    return { activeSetupId: null, mobileTab: 'setup' };
+  }
+}
+
+export function saveUIState(state) {
+  try {
+    localStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 export function loadDraft() {

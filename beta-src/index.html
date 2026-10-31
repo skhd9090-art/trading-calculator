@@ -2,26 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
   <meta name="description" content="Beta Multi-Entry Crypto Trading Calculator with Fill Simulator & Groq AI Signal Parser" />
+  
+  <!-- PWA & Mobile Standalone App Metadata -->
   <meta name="theme-color" content="#2563eb" />
-  <link rel="manifest" href="../manifest.json" />
-  <link rel="apple-touch-icon" href="../icon-192.svg" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Trading Calc" />
+  <meta name="application-name" content="Trading Calc" />
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="./icon-192.svg" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png" />
+
   <title>Beta Trading Calculator | Multi-Entry & AI Parser</title>
   <script>
     // Clear out any old legacy caches to prevent stale script serving
     if ('caches' in window) {
       caches.keys().then(keys => {
         keys.forEach(k => {
-          if (k !== 'trading-calculator-v10') {
+          if (k !== 'trading-calculator-v11') {
             caches.delete(k);
           }
         });
       });
     }
+
+    // Register service worker for standalone PWA capability & instant offline caching
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        for (let r of regs) r.update();
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../sw.js', { scope: '../' })
+          .then(reg => {
+            console.log('[SW] PWA Service Worker registered with scope:', reg.scope);
+          })
+          .catch(err => {
+            navigator.serviceWorker.register('../sw.js').catch(e => console.warn('[SW] Register fallback:', e));
+          });
       });
     }
   </script>
