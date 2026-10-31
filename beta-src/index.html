@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-  <meta name="description" content="Beta Multi-Entry Crypto Trading Calculator with Fill Simulator & Groq AI Signal Parser" />
+  <meta name="description" content="PositionLab — Multi-Entry Crypto Position Sizing, Fill Simulator & AI Parser" />
   
   <!-- PWA & Mobile Standalone App Metadata -->
   <meta name="theme-color" content="#2563eb" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Trading Calc" />
-  <meta name="application-name" content="Trading Calc" />
+  <meta name="apple-mobile-web-app-title" content="PositionLab" />
+  <meta name="application-name" content="PositionLab" />
 
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
@@ -20,13 +20,13 @@
   <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png" />
   <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png" />
 
-  <title>Beta Trading Calculator | Multi-Entry & AI Parser</title>
+  <title>PositionLab | Multi-Entry Trade & Fill Simulator</title>
   <script>
     // Clear out any old legacy caches to prevent stale script serving
     if ('caches' in window) {
       caches.keys().then(keys => {
         keys.forEach(k => {
-          if (k !== 'trading-calculator-v11') {
+          if (k !== 'positionlab-v12') {
             caches.delete(k);
           }
         });

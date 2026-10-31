@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trading-calculator-v11';
+const CACHE_NAME = 'positionlab-v12';
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {

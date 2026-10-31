@@ -1,8 +1,8 @@
 {
-  "name": "Beta Trading Calculator",
-  "short_name": "Trading Calc",
-  "description": "Multi-Entry Crypto Trading Calculator with Fill Simulator & AI Parser",
-  "id": "trading-calculator-beta-v1",
+  "name": "PositionLab - Trade & Fill Simulator",
+  "short_name": "PositionLab",
+  "description": "Multi-entry position sizing, fill scenario simulator & AI signal parser",
+  "id": "positionlab-app-v1",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -37,3 +37,4 @@
     }
   ]
 }
+

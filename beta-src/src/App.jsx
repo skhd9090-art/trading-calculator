@@ -78,7 +78,7 @@ export default function App() {
     if (outcome === 'accepted') {
       setInstallPrompt(null);
       setIsStandalone(true);
-      setNotification('Trading Calculator installed as standalone PWA!');
+      setNotification('PositionLab installed as standalone PWA!');
     }
   };
 
@@ -375,10 +375,10 @@ export default function App() {
               <span className="pill-beta">BETA</span>
               <span className="save-status-text">💾 {saveStatus}</span>
             </div>
-            <h1 className="desktop-brand-title">Multi-Entry Fill Simulator</h1>
-            <h1 className="mobile-brand-title">⚡ Trading Calc</h1>
+            <h1 className="desktop-brand-title">PositionLab</h1>
+            <h1 className="mobile-brand-title">⚡ PositionLab</h1>
             <p className="app-subtitle desktop-only-text">
-              Sizing, fill scenarios, partial targets &amp; Groq AI Telegram parser
+              Multi-entry sizing, fill scenario simulator &amp; Groq AI parser
             </p>
           </div>
 
@@ -388,7 +388,7 @@ export default function App() {
                 type="button"
                 className="btn-action-install"
                 onClick={handleInstallClick}
-                title="Install Trading Calculator to your phone so it stays open across app switching"
+                title="Install PositionLab to your phone so it stays open across app switching"
               >
                 📲 <span className="btn-label-text">Install App</span>
               </button>
